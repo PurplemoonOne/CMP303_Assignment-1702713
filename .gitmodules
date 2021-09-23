@@ -1,0 +1,3 @@
+[submodule "CMP303_Assignment/spdlog"]
+	path = CMP303_Assignment/spdlog
+	url = https://github.com/gabime/spdlog.git
