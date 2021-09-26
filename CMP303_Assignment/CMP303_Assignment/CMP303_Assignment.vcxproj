@@ -146,6 +146,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Application\Context\Context.cpp" />
+    <ClCompile Include="Application\Entity\Entity.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -159,9 +160,14 @@
     <ClCompile Include="Application\State\OptionsState.cpp" />
     <ClCompile Include="Application\State\PauseState.cpp" />
     <ClCompile Include="Application\State\SplashState.cpp" />
+    <ClCompile Include="Application\Input\InputHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Application.h" />
+    <ClInclude Include="Application\Components\Components.h" />
+    <ClInclude Include="Application\Events\Event.h" />
+    <ClInclude Include="Application\Events\Jump.h" />
+    <ClInclude Include="Application\Input\GamePad.h" />
     <ClInclude Include="Application\Log\Log.h" />
     <ClInclude Include="Application\pch.h" />
     <ClInclude Include="Application\State\State.h" />
@@ -171,6 +177,9 @@
     <ClInclude Include="Application\State\OptionsState.h" />
     <ClInclude Include="Application\State\PauseState.h" />
     <ClInclude Include="Application\State\SplashState.h" />
+    <ClInclude Include="Application\Input\Keyboard.h" />
+    <ClInclude Include="Application\Input\InputHandler.h" />
+    <ClInclude Include="Application\Entity\Entity.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

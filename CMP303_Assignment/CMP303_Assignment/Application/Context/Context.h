@@ -9,7 +9,7 @@ public:
 	~Context();
 
 	void TransitionState(std::string state);
-	void UpdateActiveState(float time);
+	void UpdateActiveState(const float time);
 private:
 	State* mActiveState;
 

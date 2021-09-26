@@ -13,7 +13,7 @@ void MenuState::OnStart()
 {
 }
 
-void MenuState::OnUpdate(float deltaTime)
+void MenuState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
 }
 

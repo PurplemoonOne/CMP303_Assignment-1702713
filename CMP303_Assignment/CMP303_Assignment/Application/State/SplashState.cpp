@@ -13,7 +13,7 @@ void SplashState::OnStart()
 {
 }
 
-void SplashState::OnUpdate(float deltaTime)
+void SplashState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
 }
 

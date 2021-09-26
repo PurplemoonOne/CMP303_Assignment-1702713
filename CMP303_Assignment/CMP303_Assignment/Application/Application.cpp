@@ -4,7 +4,6 @@
 
 #include <SFML/Window.hpp>
 
-
 Application* Application::sApp = nullptr;
 
 Application::Application()
@@ -20,32 +19,79 @@ Application::Application()
 
 	//Initialise clock object
 	clock = sf::Clock();
-
-	//Initialise the application context
-	context = std::make_unique<Context>();
 }
 
-Application::~Application()
+Application::~Application(){}
+
+void Application::ProcessEvents(Keyboard& keyboard, Context& context)
 {
+	// check all the window's events that were triggered since the last iteration of the loop
+	sf::Event event;
+	while (window->pollEvent(event))
+	{
+		switch (event.type)
+		{
+		case sf::Event::Closed:
+			window->close();
+			break;
+		case sf::Event::Resized:
+			window->setSize(sf::Vector2u(event.size.width, event.size.height));
+			break;
+		case sf::Event::LostFocus:
+			context.TransitionState("pause");
+			break;
+		case sf::Event::GainedFocus:
+			context.TransitionState("game");
+			break;
+		case sf::Event::KeyPressed:
+			keyboard.SetKeyDown(event.key.code);
+			break;
+		case sf::Event::KeyReleased:
+			keyboard.SetKeyUp(event.key.code);
+			break;
+		case sf::Event::MouseMoved:
+			keyboard.SetMousePos(event.mouseMove.x, event.mouseMove.y);
+			break;
+		case sf::Event::MouseButtonPressed:
+			if (event.mouseButton.button == sf::Mouse::Left)
+			{
+				keyboard.SetMouseLeftButton(true);
+			}
+			else if (event.mouseButton.button == sf::Mouse::Right)
+			{
+				keyboard.SetMouseRightButton(true);
+			}
+			break;
+		case sf::Event::MouseButtonReleased:
+			if (event.mouseButton.button == sf::Mouse::Left)
+			{
+				keyboard.SetMouseLeftButton(false);
+			}
+			else if (event.mouseButton.button == sf::Mouse::Right)
+			{
+				keyboard.SetMouseRightButton(false);
+			}
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 void Application::Run()
 {
+	Keyboard input;
+	Context context;
+	sf::Time elapsed;
 
 	// run the program as long as the window is open
 	while (window->isOpen())
 	{
-		// check all the window's events that were triggered since the last iteration of the loop
-		sf::Event event;
-		while (window->pollEvent(event))
-		{			
-			sf::Time elapsed = clock.restart();
-
-			context->UpdateActiveState(elapsed.asSeconds());
-
-			// "close requested" event: we close the window
-			if (event.type == sf::Event::Closed)
-				window->close();
-		}
+		//Process the event queue.
+		ProcessEvents(input, context);
+		//Calculate delta time.
+		elapsed = clock.restart();
+		//Update the application's context.
+		context.UpdateActiveState(elapsed.asSeconds());
 	}
 }

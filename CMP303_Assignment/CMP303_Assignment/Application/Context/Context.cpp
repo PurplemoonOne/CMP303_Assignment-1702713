@@ -4,6 +4,7 @@
 #include "../State/MenuState.h"
 #include "../State/OptionsState.h"
 #include "../State/PauseState.h"
+#include "../State/SplashState.h"
 #include "Context.h"
 
 Context* Context::mContext = nullptr;
@@ -21,7 +22,9 @@ Context::Context()
 	states["menu"] =	new MenuState();
 	states["options"] = new OptionsState();
 	states["pause"] =   new PauseState();
+	states["splash"] =  new SplashState();
 
+	mActiveState = states["splash"];
 	TransitionState("splash");
 }
 
@@ -56,19 +59,25 @@ Context::~Context()
 		delete states["pause"];
 		states["pause"] = nullptr;
 	}
+
+	if (states["splash"])
+	{
+		delete states["splash"];
+		states["splash"] = nullptr;
+	}
 }
 
 void Context::TransitionState(std::string state)
 {
 	if (states[state] != nullptr)
-		mActiveState->OnDetach();
+		this->mActiveState->OnDetach();
 
 	this->mActiveState = states[state];
 	this->mActiveState->SetContext(this);
 	this->mActiveState->OnAttach();
 }
 
-void Context::UpdateActiveState(float time)
+void Context::UpdateActiveState(const float time)
 {
 	this->mActiveState->OnUpdate(time);
 	this->mActiveState->OnRender();

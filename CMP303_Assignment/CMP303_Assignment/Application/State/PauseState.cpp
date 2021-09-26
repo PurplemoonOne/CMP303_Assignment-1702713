@@ -14,7 +14,7 @@ void PauseState::OnStart()
 {
 }
 
-void PauseState::OnUpdate(float deltaTime)
+void PauseState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
 }
 
