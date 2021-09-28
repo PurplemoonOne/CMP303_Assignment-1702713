@@ -1,5 +1,6 @@
 #include "../pch.h"
 #include "SplashState.h"
+#include <SFML/Graphics.hpp>
 
 SplashState::SplashState()
 {
@@ -17,9 +18,9 @@ void SplashState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad
 {
 }
 
-void SplashState::OnRender()
-{
-}
+//void SplashState::OnRender(sf::RenderWindow* window)
+//{
+//}
 
 void SplashState::OnAttach()
 {

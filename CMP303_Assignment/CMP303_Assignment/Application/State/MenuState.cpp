@@ -1,5 +1,6 @@
 #include "../pch.h"
 #include "MenuState.h"
+#include <SFML/Graphics.hpp>
 
 MenuState::MenuState()
 {
@@ -17,9 +18,9 @@ void MenuState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
 }
 
-void MenuState::OnRender()
-{
-}
+//void MenuState::OnRender(sf::RenderWindow* window)
+//{
+//}
 
 void MenuState::OnAttach()
 {

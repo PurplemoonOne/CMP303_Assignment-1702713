@@ -25,7 +25,9 @@ Context::Context()
 	states["splash"] =  new SplashState();
 
 	mActiveState = states["splash"];
-	TransitionState("splash");
+	mActiveState->SetContext(this);
+
+	TransitionState("game");
 }
 
 Context::~Context()
@@ -77,8 +79,8 @@ void Context::TransitionState(std::string state)
 	this->mActiveState->OnAttach();
 }
 
-void Context::UpdateActiveState(const float time)
+void Context::UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad)
 {
-	this->mActiveState->OnUpdate(time);
-	this->mActiveState->OnRender();
+	this->mActiveState->OnUpdate(time, keyboard, gamepad);
+	//this->mActiveState->OnRender(window);
 }

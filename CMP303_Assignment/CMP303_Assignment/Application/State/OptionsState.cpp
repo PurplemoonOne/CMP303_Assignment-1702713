@@ -1,6 +1,6 @@
 #include "../pch.h"
 #include "OptionsState.h"
-
+#include <SFML/Graphics.hpp>
 OptionsState::OptionsState()
 {
 }
@@ -17,9 +17,9 @@ void OptionsState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepa
 {
 }
 
-void OptionsState::OnRender()
-{
-}
+//void OptionsState::OnRender(sf::RenderWindow* window)
+//{
+//}
 
 void OptionsState::OnAttach()
 {

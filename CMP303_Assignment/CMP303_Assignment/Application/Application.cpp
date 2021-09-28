@@ -14,28 +14,25 @@ Application::Application()
 	//Initialise log system.
 	Logger::Init();
 
-	//Create a window.
-	window = std::make_unique<sf::Window>(sf::VideoMode(1920, 1080), "Application");
-
 	//Initialise clock object
 	clock = sf::Clock();
 }
 
 Application::~Application(){}
 
-void Application::ProcessEvents(Keyboard& keyboard, Context& context)
+void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Context& context)
 {
 	// check all the window's events that were triggered since the last iteration of the loop
 	sf::Event event;
-	while (window->pollEvent(event))
+	while (window.pollEvent(event))
 	{
 		switch (event.type)
 		{
 		case sf::Event::Closed:
-			window->close();
+			window.close();
 			break;
 		case sf::Event::Resized:
-			window->setSize(sf::Vector2u(event.size.width, event.size.height));
+			window.setSize(sf::Vector2u(event.size.width, event.size.height));
 			break;
 		case sf::Event::LostFocus:
 			context.TransitionState("pause");
@@ -83,15 +80,16 @@ void Application::Run()
 	Keyboard input;
 	Context context;
 	sf::Time elapsed;
+	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Systems");
 
 	// run the program as long as the window is open
-	while (window->isOpen())
+	while (window.isOpen())
 	{
 		//Process the event queue.
-		ProcessEvents(input, context);
+		ProcessEvents(window, input, context);
 		//Calculate delta time.
 		elapsed = clock.restart();
 		//Update the application's context.
-		context.UpdateActiveState(elapsed.asSeconds());
+		context.UpdateActiveState(elapsed.asSeconds(), &window, &input, nullptr);
 	}
 }

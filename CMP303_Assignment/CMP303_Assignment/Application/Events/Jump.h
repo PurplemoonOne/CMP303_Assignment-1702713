@@ -13,4 +13,9 @@ public:
 
 	}
 
+	virtual void Execute(const float deltaTime, GameObject* entity) override
+	{
+
+	}
+
 };

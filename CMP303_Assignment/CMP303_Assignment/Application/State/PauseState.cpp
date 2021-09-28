@@ -1,6 +1,6 @@
 #include "../pch.h"
 #include "PauseState.h"
-
+#include <SFML/Graphics.hpp>
 
 PauseState::PauseState()
 {
@@ -18,9 +18,9 @@ void PauseState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
 }
 
-void PauseState::OnRender()
-{
-}
+//void PauseState::OnRender(sf::RenderWindow* window)
+//{
+//}
 
 void PauseState::OnAttach()
 {

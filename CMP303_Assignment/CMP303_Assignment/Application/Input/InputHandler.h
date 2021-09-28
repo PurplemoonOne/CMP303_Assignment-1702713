@@ -10,9 +10,10 @@ public:
 	InputHandler();
 	virtual ~InputHandler() = default;
 
-	void HandleKeyboard(Keyboard& keyboard);
+	void HandleKeyboard(Keyboard* keyboard);
 	Event* QuedEvent() const { return quedEvent; }
 private:
 	Event* quedEvent;
 };
+
 

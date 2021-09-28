@@ -22,32 +22,32 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{46707B3D-E3AE-4721-92A9-3D1A238C5A16}</ProjectGuid>
     <RootNamespace>CMP303Assignment</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -141,12 +141,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Application.cpp" />
+    <ClCompile Include="Application\ECS\EntityComponentSystem.cpp" />
+    <ClCompile Include="Application\Entity\Entity.cpp" />
     <ClCompile Include="Application\Log\Log.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Application\Context\Context.cpp" />
-    <ClCompile Include="Application\Entity\Entity.cpp" />
+    <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -161,10 +163,14 @@
     <ClCompile Include="Application\State\PauseState.cpp" />
     <ClCompile Include="Application\State\SplashState.cpp" />
     <ClCompile Include="Application\Input\InputHandler.cpp" />
+    <ClCompile Include="Application\Renderer\Renderer.cpp" />
+    <ClCompile Include="Application\Scene\Scene.cpp" />
+    <ClCompile Include="Application\GameObject\GameObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Application.h" />
     <ClInclude Include="Application\Components\Components.h" />
+    <ClInclude Include="Application\ECS\EntityComponentSystem.h" />
     <ClInclude Include="Application\Events\Event.h" />
     <ClInclude Include="Application\Events\Jump.h" />
     <ClInclude Include="Application\Input\GamePad.h" />
@@ -180,6 +186,10 @@
     <ClInclude Include="Application\Input\Keyboard.h" />
     <ClInclude Include="Application\Input\InputHandler.h" />
     <ClInclude Include="Application\Entity\Entity.h" />
+    <ClInclude Include="Application\Camera\Camera.h" />
+    <ClInclude Include="Application\Renderer\Renderer.h" />
+    <ClInclude Include="Application\Scene\Scene.h" />
+    <ClInclude Include="Application\GameObject\GameObject.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
