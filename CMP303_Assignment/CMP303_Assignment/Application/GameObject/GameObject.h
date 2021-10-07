@@ -1,19 +1,19 @@
 #pragma once
-#include <SFML/System/Vector2.hpp>
+#include <bits.h>
+
 
 class GameObject
 {
 public:
-	GameObject() = default;
+	GameObject();
 	GameObject(const GameObject& gameObject) = default;
-	GameObject(float health, float dps);
-	~GameObject();
+	~GameObject() = default;
 public:
 
-
+	inline int ID() const { return objectId; }
 
 private:
-	
-	int objectId;
+	static UINT32 objectCount;
+	UINT32 objectId;
 };
 

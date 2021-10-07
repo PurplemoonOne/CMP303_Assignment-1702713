@@ -8,17 +8,13 @@ Renderer::~Renderer()
 {
 }
 
-void Renderer::Draw(std::vector<GameObject> objects)
+void Renderer::Submit(std::vector<RendererComponent> objects)
 {
+	window->clear(sf::Color(0, 0, 0));
+
+	for (auto& drawable : objects)
+		window->draw(drawable.);
+
+	window->display();
 }
 
-void Renderer::Draw(std::vector<RendererComponent> objects)
-{
-	window->clear(sf::Color(1.0f, 0.0f, 0.0f, 1.0f));
-	window->setView(sf::View());
-
-	for (auto& component : objects)
-	{
-	}
-
-}

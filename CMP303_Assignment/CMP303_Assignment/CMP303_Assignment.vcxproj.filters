@@ -51,16 +51,10 @@
     <ClCompile Include="Application\Camera\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Entity\Entity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Application\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Application\Scene\Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\ECS\EntityComponentSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Application\GameObject\GameObject.cpp">
@@ -107,16 +101,10 @@
     <ClInclude Include="Application\Input\InputHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Entity\Entity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Application\Events\Event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Events\Jump.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\Components\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Camera\Camera.h">
@@ -128,10 +116,10 @@
     <ClInclude Include="Application\Scene\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\ECS\EntityComponentSystem.h">
+    <ClInclude Include="Application\GameObject\GameObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\GameObject\GameObject.h">
+    <ClInclude Include="Application\Utility\RandomNumberGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

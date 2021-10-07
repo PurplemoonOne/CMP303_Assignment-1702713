@@ -83,4 +83,5 @@ void Context::UpdateActiveState(const float time, sf::RenderWindow* window, Keyb
 {
 	this->mActiveState->OnUpdate(time, keyboard, gamepad);
 	//this->mActiveState->OnRender(window);
+	//Renderer->Render(window);
 }

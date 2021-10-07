@@ -141,8 +141,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application\Application.cpp" />
-    <ClCompile Include="Application\ECS\EntityComponentSystem.cpp" />
-    <ClCompile Include="Application\Entity\Entity.cpp" />
     <ClCompile Include="Application\Log\Log.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -169,8 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Application.h" />
-    <ClInclude Include="Application\Components\Components.h" />
-    <ClInclude Include="Application\ECS\EntityComponentSystem.h" />
     <ClInclude Include="Application\Events\Event.h" />
     <ClInclude Include="Application\Events\Jump.h" />
     <ClInclude Include="Application\Input\GamePad.h" />
@@ -185,11 +181,11 @@
     <ClInclude Include="Application\State\SplashState.h" />
     <ClInclude Include="Application\Input\Keyboard.h" />
     <ClInclude Include="Application\Input\InputHandler.h" />
-    <ClInclude Include="Application\Entity\Entity.h" />
     <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Renderer\Renderer.h" />
     <ClInclude Include="Application\Scene\Scene.h" />
     <ClInclude Include="Application\GameObject\GameObject.h" />
+    <ClInclude Include="Application\Utility\RandomNumberGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
