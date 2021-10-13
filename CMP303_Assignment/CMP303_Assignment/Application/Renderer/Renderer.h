@@ -1,10 +1,5 @@
 #pragma once
-#include <SFML/Graphics.hpp>
-
-struct RendererComponent
-{
-	sf::RectangleShape graphics;
-};
+#include "../Components/Components.h"
 
 class Renderer
 {
@@ -13,8 +8,7 @@ public:
 	Renderer(sf::RenderWindow* lwindow);
 	virtual ~Renderer(); 
 
-	//void Draw(std::vector<GameObject> objects);
-	void Submit(std::vector<RendererComponent> graphics);
+	void Submit(const std::vector<RendererComponent>& graphics);
 
 private:
 	sf::RenderWindow* window;

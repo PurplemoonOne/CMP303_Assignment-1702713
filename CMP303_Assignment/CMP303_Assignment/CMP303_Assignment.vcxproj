@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Application\Animation\Animation.cpp" />
     <ClCompile Include="Application\Application.cpp" />
     <ClCompile Include="Application\Log\Log.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -166,7 +167,9 @@
     <ClCompile Include="Application\GameObject\GameObject.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application\Animation\Animation.h" />
     <ClInclude Include="Application\Application.h" />
+    <ClInclude Include="Application\Components\Components.h" />
     <ClInclude Include="Application\Events\Event.h" />
     <ClInclude Include="Application\Events\Jump.h" />
     <ClInclude Include="Application\Input\GamePad.h" />

@@ -82,6 +82,5 @@ void Context::TransitionState(std::string state)
 void Context::UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad)
 {
 	this->mActiveState->OnUpdate(time, keyboard, gamepad);
-	//this->mActiveState->OnRender(window);
-	//Renderer->Render(window);
+	renderer.Submit(window);
 }
