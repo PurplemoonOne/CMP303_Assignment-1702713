@@ -20,7 +20,7 @@ Application::Application()
 
 Application::~Application(){}
 
-void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Context& context)
+void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Scene& scene)
 {
 	// check all the window's events that were triggered since the last iteration of the loop
 	sf::Event event;
@@ -29,17 +29,18 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Co
 		switch (event.type)
 		{
 		case sf::Event::Closed:
+			scene.Clean();
 			window.close();
 			break;
 		case sf::Event::Resized:
 			window.setSize(sf::Vector2u(event.size.width, event.size.height));
 			break;
-		case sf::Event::LostFocus:
-			context.TransitionState("pause");
+	/*	case sf::Event::LostFocus:
+			scene.TransitionState("pause");
 			break;
 		case sf::Event::GainedFocus:
-			context.TransitionState("game");
-			break;
+			scene.TransitionState("game");
+			break;*/
 		case sf::Event::KeyPressed:
 			keyboard.SetKeyDown(event.key.code);
 			break;
@@ -77,19 +78,21 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Co
 
 void Application::Run()
 {
-	Keyboard input;
-	Context context;
+
 	sf::Time elapsed;
 	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Systems");
+
+	Keyboard input;
+	Scene scene;
 
 	// run the program as long as the window is open
 	while (window.isOpen())
 	{
 		//Process the event queue.
-		ProcessEvents(window, input, context);
+		ProcessEvents(window, input, scene);
 		//Calculate delta time.
 		elapsed = clock.restart();
 		//Update the application's context.
-		context.UpdateActiveState(elapsed.asSeconds(), &window, &input, nullptr);
+		scene.UpdateActiveState(elapsed.asSeconds(), &window, &input, nullptr);
 	}
 }

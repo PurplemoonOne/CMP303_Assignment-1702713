@@ -1,25 +1,27 @@
-//#pragma once
-//#include "../ECS/EntityComponentSystem.h"
-//#include <string>
-//
-//class Entity;
-//class Scene
-//{
-//public:
-//	
-//	friend class Entity;
-//
-//public:
-//	Scene();
-//	~Scene();
-//
-//	Entity CreateEntity(const std::string& name = std::string());
-//
-//	void OnUpdate(float deltaTime);
-//
-//private:
-//
-//	EntityComponentSystem ecs;
-//	
-//};
-//
+#pragma once
+#include <unordered_map>
+#include "../Renderer/Renderer.h"
+class State;
+class Keyboard;
+class Gamepad;
+class Scene
+{
+public:
+	Scene();
+	~Scene();
+
+	void TransitionState(std::string state);
+	void UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad);
+
+	Registery* GetRegistery() { return &registery; }
+	void Clean();
+
+private:
+	Renderer renderer;
+	Registery registery;
+	State* mActiveState;
+	std::unordered_map<std::string, State*> states;
+
+	static Scene* mContext;
+};
+

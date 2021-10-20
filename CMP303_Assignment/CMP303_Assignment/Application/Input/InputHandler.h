@@ -1,4 +1,5 @@
 #pragma once
+#include "../Events/Jump.h"
 
 class Keyboard;
 class Gamepad;
@@ -10,10 +11,9 @@ public:
 	InputHandler();
 	virtual ~InputHandler() = default;
 
-	void HandleKeyboard(Keyboard* keyboard);
-	Event* QuedEvent() const { return quedEvent; }
+	Event* HandleKeyboard(Keyboard* keyboard);
 private:
-	Event* quedEvent;
+	Jump jump;
 };
 
 

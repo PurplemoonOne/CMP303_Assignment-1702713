@@ -2,7 +2,8 @@
 
 class Gamepad;
 class Keyboard;
-class Context;
+class Scene;
+struct Registery;
 
 namespace sf
 {
@@ -15,16 +16,15 @@ public:
 	virtual ~State() = default;
 	virtual void OnStart()	= 0;
 	virtual void OnUpdate(float deltaTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) = 0;
-	//virtual void OnRender(sf::RenderWindow* window) = 0;
 	virtual void OnAttach() = 0;
 	virtual void OnDetach() = 0;
 
-	void SetContext(Context* lcontext)
+	void SetScene(Scene* lscene)
 	{
-		this->mContext = lcontext;
+		this->mScene = lscene;
 	}
 
 
 protected:
-	Context* mContext;
+	Scene* mScene;
 };

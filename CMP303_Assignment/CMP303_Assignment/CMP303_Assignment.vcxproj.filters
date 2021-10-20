@@ -27,7 +27,7 @@
     <ClCompile Include="Application\Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Context\Context.cpp">
+    <ClCompile Include="Application\Scene\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Application\State\GameState.cpp">
@@ -54,10 +54,7 @@
     <ClCompile Include="Application\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Scene\Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\GameObject\GameObject.cpp">
+    <ClCompile Include="Application\GameObject\Entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Application\Animation\Animation.cpp">
@@ -80,7 +77,7 @@
     <ClInclude Include="Application\State\GameState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Context\Context.h">
+    <ClInclude Include="Application\Scene\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\State\MenuState.h">
@@ -116,10 +113,7 @@
     <ClInclude Include="Application\Renderer\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Scene\Scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\GameObject\GameObject.h">
+    <ClInclude Include="Application\GameObject\Entity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Utility\RandomNumberGenerator.h">

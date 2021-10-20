@@ -43,6 +43,7 @@ sf::IntRect& Animation::CurrentFrame()
 	{
 		mFrame = sf::IntRect(mFrame.left + mFrame.width, mFrame.top, -mFrame.width, mFrame.height);
 	}
+	return mFrame;
 }
 
 inline void Animation::Stop()

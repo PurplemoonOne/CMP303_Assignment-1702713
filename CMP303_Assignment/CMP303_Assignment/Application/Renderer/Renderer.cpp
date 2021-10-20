@@ -9,12 +9,14 @@ Renderer::~Renderer()
 {
 }
 
-void Renderer::Submit(const std::vector<RendererComponent>& objects)
+void Renderer::Submit(sf::RenderWindow* window, const std::vector<RendererComponent>& objects)
 {
-	window->clear(sf::Color(0, 0, 0));
+	window->clear(sf::Color(125, 0, 125));
 
 	for (auto& drawable : objects)
-		window->draw(drawable.graphics);
+	{
+ 		window->draw(drawable.graphics);
+	}
 
 	window->display();
 }

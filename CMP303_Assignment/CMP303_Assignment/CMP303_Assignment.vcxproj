@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>openal32.lib;sfml-audio.lib;sfml-graphics.lib;sfml-system.lib;sfml-window.lib;sfml-main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>openal32.lib;ogg.lib;flac.lib;sfml-audio.lib;sfml-graphics.lib;sfml-system.lib;sfml-window.lib;sfml-main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -136,7 +136,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>openal32.lib;sfml-audio.lib;sfml-graphics.lib;sfml-system.lib;sfml-window.lib;sfml-main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>openal32.lib;freetype.lib;winmm.lib;gdi32.lib;flac.lib;vorbisenc.lib;vorbisfile.lib;ogg.lib;ws2_32.lib;sfml-audio-s.lib;sfml-graphics-s.lib;sfml-system-s.lib;sfml-window-s.lib;sfml-main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -146,7 +146,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Application\Context\Context.cpp" />
+    <ClCompile Include="Application\Scene\Scene.cpp" />
     <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -163,8 +163,7 @@
     <ClCompile Include="Application\State\SplashState.cpp" />
     <ClCompile Include="Application\Input\InputHandler.cpp" />
     <ClCompile Include="Application\Renderer\Renderer.cpp" />
-    <ClCompile Include="Application\Scene\Scene.cpp" />
-    <ClCompile Include="Application\GameObject\GameObject.cpp" />
+    <ClCompile Include="Application\GameObject\Entity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Animation\Animation.h" />
@@ -177,7 +176,7 @@
     <ClInclude Include="Application\pch.h" />
     <ClInclude Include="Application\State\State.h" />
     <ClInclude Include="Application\State\GameState.h" />
-    <ClInclude Include="Application\Context\Context.h" />
+    <ClInclude Include="Application\Scene\Scene.h" />
     <ClInclude Include="Application\State\MenuState.h" />
     <ClInclude Include="Application\State\OptionsState.h" />
     <ClInclude Include="Application\State\PauseState.h" />
@@ -186,8 +185,7 @@
     <ClInclude Include="Application\Input\InputHandler.h" />
     <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Renderer\Renderer.h" />
-    <ClInclude Include="Application\Scene\Scene.h" />
-    <ClInclude Include="Application\GameObject\GameObject.h" />
+    <ClInclude Include="Application\GameObject\Entity.h" />
     <ClInclude Include="Application\Utility\RandomNumberGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,5 @@
 #pragma once
-#include "Context/Context.h"
+#include "Scene/Scene.h"
 #include "Input/Keyboard.h"
 #include "Input/GamePad.h"
 
@@ -21,7 +21,7 @@ public:
 public:
 	void Run();
 private:
-	void ProcessEvents(sf::RenderWindow& window, Keyboard& input, Context& context);
+	void ProcessEvents(sf::RenderWindow& window, Keyboard& input, Scene& context);
 private:
 	static Application* sApp;
 private:

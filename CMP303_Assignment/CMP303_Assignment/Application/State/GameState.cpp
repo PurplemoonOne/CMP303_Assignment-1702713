@@ -1,38 +1,37 @@
 #include "GameState.h"
-#include "../Input/InputHandler.h"
-
 #include "../Events/Event.h"
 
 
 GameState::GameState()
-{
-
-}
+{}
 
 GameState::~GameState()
-{
-}
+{}
 
 void GameState::OnStart()
 {
-	
+	player = Entity(mScene, "player");
 }
 
 void GameState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 {
-	inputHandler->HandleKeyboard(keyboard);
-	//inputHandler.HandleGamepad(gamepad);
+	//Execute the queued event.
+	Event* event = inputHandler.HandleKeyboard(keyboard);
 
-	Event* event = inputHandler->QuedEvent();
+	if (event)
+	{
+		event->Execute(deltaTime, &player);
+	}
 	
-
-
+	mScene->GetRegistery()->UpdateRendererComponent("player");
 }
 
 void GameState::OnAttach()
 {
+	OnStart();
 }
 
 void GameState::OnDetach()
 {
+	//delete player;
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "State.h"
-#include "../Scene/Scene.h"
-
+#include "../GameObject/Entity.h"
+#include "../Input/InputHandler.h"
 #include <memory>
 
 class InputHandler;
@@ -17,8 +17,8 @@ private:
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
 private:
+	InputHandler inputHandler;
 
-
-	InputHandler* inputHandler;
+	Entity player;
 };
 

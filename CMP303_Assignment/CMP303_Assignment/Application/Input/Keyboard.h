@@ -102,6 +102,20 @@ public:
 		}
 	}
 
+	// @brief Map an event to a key object.
+	// @param[in] The element in the keys array to be accessed.
+	// @param[in] A pointer to the event object.
+	void MapEvent(int code, Event* event)
+	{
+		if (code > 0)
+		{
+			if (keys[code].event == nullptr)
+			{
+				keys[code].event = event;
+			}
+		}
+	}
+
 private:
 	Keys keys[256]{ false, nullptr };
 	Mouse mMouse;
