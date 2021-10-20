@@ -5,7 +5,7 @@ Entity::Entity(Scene* scene, const std::string & tag)
 	mScene(scene),
 	mTag(tag)
 {
-	mScene->GetRegistery()->AddNewEntity(tag, sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1.0f, 1.0f));
+	mScene->GetRegistery()->AddNewEntity(tag, sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 100.0f));
 }
 
 TransformComponent& Entity::GetTransform(const std::string& tag)

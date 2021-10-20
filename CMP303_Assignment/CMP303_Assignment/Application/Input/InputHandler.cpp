@@ -8,7 +8,7 @@ InputHandler::InputHandler()
 
 Event* InputHandler::HandleKeyboard(Keyboard * lkeyboard)
 {
-	lkeyboard->MapEvent(sf::Keyboard::Space, &jump);
+	lkeyboard->MapEvent(sf::Keyboard::Space, &move);
 
 	for (int index = 0; index < 256; ++index)
 	{

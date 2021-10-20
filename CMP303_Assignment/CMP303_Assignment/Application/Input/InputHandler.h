@@ -13,7 +13,7 @@ public:
 
 	Event* HandleKeyboard(Keyboard* keyboard);
 private:
-	Jump jump;
+	Move move;
 };
 
 

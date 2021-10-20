@@ -1,6 +1,6 @@
 #include "GameState.h"
 #include "../Events/Event.h"
-
+#include "../Input/Keyboard.h"
 
 GameState::GameState()
 {}
@@ -20,7 +20,7 @@ void GameState::OnUpdate(float deltaTime, Keyboard* keyboard, Gamepad* gamepad)
 
 	if (event)
 	{
-		event->Execute(deltaTime, &player);
+		event->Execute(deltaTime, &player, keyboard->MouseX(), keyboard->MouseY());
 	}
 	
 	mScene->GetRegistery()->UpdateRendererComponent("player");

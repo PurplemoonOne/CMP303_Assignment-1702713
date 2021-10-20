@@ -75,17 +75,8 @@ struct RendererComponent
 		bInit(true)
 	{}
 
-	RendererComponent(sf::Vector2f position,  sf::Vector2f size, float rotation, sf::Color colour)
+	RendererComponent(sf::Vector2f position,  sf::Vector2f size, float rotation, sf::Color colour) : graphics(size)
 	{
-		graphics = sf::RectangleShape();
-		graphics.setTextureRect(sf::IntRect(0, 1, 100, 100));
-		graphics.setOrigin(0.0f, 0.0f);
-		graphics.setSize(size);
-		graphics.setScale(sf::Vector2f(5.f, 5.f));
-		graphics.setPosition(position);
-		graphics.setRotation(rotation);
-		graphics.setFillColor(colour);
-		graphics.setOutlineColor(sf::Color::Blue);
 		bInit = true;
 	}
 

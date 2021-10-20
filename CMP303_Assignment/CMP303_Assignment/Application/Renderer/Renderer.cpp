@@ -15,7 +15,7 @@ void Renderer::Submit(sf::RenderWindow* window, const std::vector<RendererCompon
 
 	for (auto& drawable : objects)
 	{
- 		window->draw(drawable.graphics);
+  		window->draw(drawable.graphics);
 	}
 
 	window->display();

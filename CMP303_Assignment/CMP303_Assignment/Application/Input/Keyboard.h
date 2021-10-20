@@ -100,6 +100,7 @@ public:
 		{
 			return keys[code].event;
 		}
+		return nullptr;
 	}
 
 	// @brief Map an event to a key object.
