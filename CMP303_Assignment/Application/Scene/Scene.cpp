@@ -21,14 +21,12 @@ Scene::Scene()
 }
 
 Scene::~Scene()
-{
-
+{  
 	if (states["game"])
 	{
 		delete states["game"];
 		states["game"] = nullptr;
 	}
-	//e
 }
 
 void Scene::TransitionState(std::string state)
@@ -44,7 +42,7 @@ void Scene::TransitionState(std::string state)
 void Scene::UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad)
 {
 	mActiveState->OnUpdate(time, keyboard, gamepad);
-	renderer.Submit(window, registery.GetRendererComponents());
+	mRenderer.Submit(window, registery.GetRendererComponents());
 }
 
 void Scene::Clean()

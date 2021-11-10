@@ -17,7 +17,7 @@ public:
 	void Clean();
 
 private:
-	Renderer renderer;
+	Renderer mRenderer;
 	Registery registery;
 	State* mActiveState;
 	std::unordered_map<std::string, State*> states;

@@ -95,9 +95,6 @@
     <ClInclude Include="Application\GameObject\Entity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Utility\RandomNumberGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Application\Animation\Animation.h">
       <Filter>Header Files</Filter>
     </ClInclude>

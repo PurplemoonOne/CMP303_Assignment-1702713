@@ -182,7 +182,6 @@
     <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Renderer\Renderer.h" />
     <ClInclude Include="Application\GameObject\Entity.h" />
-    <ClInclude Include="Application\Utility\RandomNumberGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

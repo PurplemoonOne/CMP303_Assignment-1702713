@@ -15,7 +15,7 @@ class State
 public:
 	virtual ~State() = default;
 	virtual void OnStart()	= 0;
-	virtual void OnUpdate(float deltaTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) = 0;
+	virtual void OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) = 0;
 	virtual void OnAttach() = 0;
 	virtual void OnDetach() = 0;
 
