@@ -13,6 +13,11 @@ class GameState : public State
 public:
 	GameState();
 	virtual ~GameState() override;
+
+	Connection* GetNetwork() const { return connectionManager; }
+	const sf::Vector2f& GetClientPosition() { return thisEntity.GetTransform(thisEntity.GetTag()).position; }
+	const sf::Vector2f& GetOpponentPosition() { return otherEntity.GetTransform(otherEntity.GetTag()).position; }
+
 private:
 	virtual void OnStart() override;
 	virtual void OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) override;
@@ -22,7 +27,7 @@ private:
 	InputHandler inputHandler;
 	Entity thisEntity;
 	Entity otherEntity;
-	float elapsedTime;
+	float networkTickRate;
 
 private:
 	/**	Networking code	**/

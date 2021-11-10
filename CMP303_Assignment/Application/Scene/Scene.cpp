@@ -6,7 +6,7 @@
 
 Scene* Scene::mContext = nullptr;
 
-Scene::Scene()
+Scene::Scene(sf::RenderWindow* window)
 	:
 	mActiveState(nullptr)
 {
@@ -18,6 +18,8 @@ Scene::Scene()
 	states["game"] =	new GameState();
 
 	TransitionState("game");
+
+	mRenderer = Renderer(window);
 }
 
 Scene::~Scene()
@@ -39,10 +41,20 @@ void Scene::TransitionState(std::string state)
 	mActiveState->OnAttach();
 }
 
-void Scene::UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad)
+void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad, bool debugInfo)
 {
-	mActiveState->OnUpdate(time, keyboard, gamepad);
-	mRenderer.Submit(window, registery.GetRendererComponents());
+	//Update the current state.
+	mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
+
+	//Submit all of the updated sprites to the renderer.
+	mRenderer.Submit(registery.GetRendererComponents());
+
+	if (debugInfo)
+	{
+		Connection* network = static_cast<GameState*>(mContext->mActiveState)->GetNetwork();
+		mRenderer.DebugRender(network->GetSocket().getLocalPort(), "192.168.0.27", static_cast<GameState*>(mContext->mActiveState)->GetClientPosition(), appElapsedTime);
+	}
+		
 }
 
 void Scene::Clean()

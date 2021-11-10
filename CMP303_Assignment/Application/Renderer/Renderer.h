@@ -9,9 +9,12 @@ public:
 	Renderer(sf::RenderWindow* lwindow);
 	virtual ~Renderer(); 
 
-	void Submit(sf::RenderWindow* window, const std::vector<RendererComponent>& graphics);
+	void Submit(const std::vector<RendererComponent>& graphics);
+
+	void DebugRender(uint16_t port, std::string ipa, sf::Vector2f clientPosition, const float appElapsedTime);
 
 private:
-	sf::RenderWindow* window;
+	sf::RenderWindow* window = nullptr;
+	sf::Font font;
 };
 

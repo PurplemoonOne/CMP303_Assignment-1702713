@@ -183,6 +183,9 @@
     <ClInclude Include="Application\Renderer\Renderer.h" />
     <ClInclude Include="Application\GameObject\Entity.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="Application\Assets\Karla-Regular.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -83,7 +83,12 @@ void Application::Run()
 	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Systems");
 
 	Keyboard input;
-	Scene scene;
+	Scene scene = Scene(&window);
+
+	float appElapsedTime = 0.f;
+
+	// Used to toggle network info such as average latency, port number
+	bool debugNetwork = false;
 
 	// run the program as long as the window is open
 	while (window.isOpen())
@@ -92,7 +97,15 @@ void Application::Run()
 		ProcessEvents(window, input, scene);
 		//Calculate delta time.
 		elapsed = clock.restart();
+
+		if (input.IsKeyPressed(sf::Keyboard::Q))
+		{
+			debugNetwork = (debugNetwork == false) ? debugNetwork = true : debugNetwork = false;
+		}
+
 		//Update the application's context.
-		scene.UpdateActiveState(elapsed.asSeconds(), &window, &input, nullptr);
+		scene.UpdateActiveState(elapsed.asSeconds(), appElapsedTime, &input, nullptr, debugNetwork);
+
+		appElapsedTime += 1.f * elapsed.asSeconds();
 	}
 }

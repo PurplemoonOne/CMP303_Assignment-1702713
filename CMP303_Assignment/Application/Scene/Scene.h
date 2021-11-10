@@ -7,11 +7,11 @@ class Gamepad;
 class Scene
 {
 public:
-	Scene();
+	Scene(sf::RenderWindow* window);
 	~Scene();
 
 	void TransitionState(std::string state);
-	void UpdateActiveState(const float time, sf::RenderWindow* window, Keyboard* keyboard, Gamepad* gamepad);
+	void UpdateActiveState(const float time, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad, bool debugInfo = false);
 
 	Registery* GetRegistery() { return &registery; }
 	void Clean();

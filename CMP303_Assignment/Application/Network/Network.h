@@ -42,10 +42,14 @@ public:
 	const sf::UdpSocket& GetSocket() const { return mSocket; }
 	sf::UdpSocket& GetSocket() { return mSocket; }
 
+	bool EvaluateSockets();
+
 private:
 	sf::UdpSocket mSocket;
 	sf::IpAddress mIPAdress;
 	uint16_t mPort = 0;
+
+	sf::SocketSelector select;
 
 	// @brief A vector containing most recent N messages.
 	std::vector<Packet> mMessages;

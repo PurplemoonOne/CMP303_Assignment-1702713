@@ -33,6 +33,9 @@ bool Connection::CreateUDPSocket(uint16_t lPort)
 			APP_ERROR("Something went wrong, not ports are available...");
 		}
 	}
+
+	mSocket.setBlocking(false);
+	select.add(mSocket);
 }
 
 void Connection::CloseSocket()
@@ -65,10 +68,19 @@ void Connection::ListenForPacket(uint16_t port)
 {
 	Packet recvPacket;
 	size_t recvSize;
-	if (mSocket.receive((void*)&recvPacket, size_t(sizeof(Packet)), recvSize, mIPAdress, mPort) != sf::UdpSocket::Done)
-	{
-		APP_ERROR("Failed to recvieve data from port {0}...", 4444);
-	}
 
-	mMessages.push_back(recvPacket);
+	if (select.isReady(mSocket))
+	{
+		if (mSocket.receive((void*)&recvPacket, size_t(sizeof(Packet)), recvSize, mIPAdress, mPort) != sf::UdpSocket::Done)
+		{
+			APP_ERROR("Failed to recvieve data from port {0}...", 4444);
+		}
+
+		mMessages.push_back(recvPacket);
+	}
+}
+
+bool Connection::EvaluateSockets()
+{
+
 }
