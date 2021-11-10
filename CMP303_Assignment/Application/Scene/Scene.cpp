@@ -28,7 +28,7 @@ Scene::~Scene()
 		delete states["game"];
 		states["game"] = nullptr;
 	}
-
+	//e
 }
 
 void Scene::TransitionState(std::string state)
