@@ -2,7 +2,7 @@
 #include "State.h"
 #include "../GameObject/Entity.h"
 #include "../Input/InputHandler.h"
-#include "../Network/Network.h"
+#include "../Network/Client.h"
 
 #include <memory>
 
@@ -14,9 +14,9 @@ public:
 	GameState();
 	virtual ~GameState() override;
 
-	Connection* GetNetwork() const { return connectionManager; }
-	const sf::Vector2f& GetClientPosition() { return thisEntity.GetTransform(thisEntity.GetTag()).position; }
-	const sf::Vector2f& GetOpponentPosition() { return otherEntity.GetTransform(otherEntity.GetTag()).position; }
+	Client* GetClient() const { return mClient; }
+	const sf::Vector2f& GetClientPosition() { return mEntity.GetTransform(mEntity.GetTag()).position; }
+
 
 private:
 	virtual void OnStart() override;
@@ -25,15 +25,11 @@ private:
 	virtual void OnDetach() override;
 private:
 	InputHandler inputHandler;
-	Entity thisEntity;
-	Entity otherEntity;
+	Entity mEntity;
 	float networkTickRate;
 
 private:
 	/**	Networking code	**/
-	Connection* connectionManager;
-
-	int32_t portNumber;
-
+	Client* mClient;
 };
 

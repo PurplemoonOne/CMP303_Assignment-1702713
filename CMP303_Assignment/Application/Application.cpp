@@ -35,12 +35,6 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Sc
 		case sf::Event::Resized:
 			window.setSize(sf::Vector2u(event.size.width, event.size.height));
 			break;
-	/*	case sf::Event::LostFocus:
-			scene.TransitionState("pause");
-			break;
-		case sf::Event::GainedFocus:
-			scene.TransitionState("game");
-			break;*/
 		case sf::Event::KeyPressed:
 			keyboard.SetKeyDown(event.key.code);
 			break;
@@ -107,5 +101,6 @@ void Application::Run()
 		scene.UpdateActiveState(elapsed.asSeconds(), appElapsedTime, &input, nullptr, debugNetwork);
 
 		appElapsedTime += 1.f * elapsed.asSeconds();
+		//APP_TRACE("Application elapsed time {0} ", appElapsedTime);
 	}
 }

@@ -5,24 +5,24 @@
 
 GameState::GameState()
 {
-	connectionManager = new Connection("192.168.0.27");
+	mClient = new Client();
 }
 
 GameState::~GameState()
-{}
+{
+	if (mClient)
+	{
+		delete mClient;
+		mClient = nullptr;
+	}
+}
 
 void GameState::OnStart()
 {
-	thisEntity = Entity(mScene, "player");
-	thisEntity.GetRenderer("player").graphics.setFillColor(sf::Color::Red);
+	mEntity = Entity(mScene, "player");
+	mEntity.GetRenderer("player").graphics.setFillColor(sf::Color::Red);
 
-	otherEntity = Entity(mScene, "playerTwo");
-	otherEntity.GetRenderer("playerTwo").graphics.setFillColor(sf::Color::Blue);
-
-	//Create our UDP socket
-	connectionManager->CreateUDPSocket(5555);
-
-	APP_TRACE("Created new connection on port {0} : Network {1} ", connectionManager->GetSocket().getLocalPort(), "192.168.0.27");
+	APP_TRACE("Created new socket on port {0} : Network {1} ", mClient->GetLocalPort(), mClient->GetIPAdress().toString());
 
 	networkTickRate = 0.f;
 
@@ -39,33 +39,29 @@ void GameState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	//Check for an input event.
 	if (event)
 	{
-		event->Execute(deltaTime, &thisEntity, keyboard->MouseX(), keyboard->MouseY());
+		event->Execute(deltaTime, &mEntity, keyboard->MouseX(), keyboard->MouseY());
 	}
 
-	//Send the data to the server/other client
+	//Send the data to the server.
 	if (networkTickRate >= 4.f)
 	{
-		
-		connectionManager->SendPacket
+		APP_TRACE("Sending data to server...");
+		mClient->SendPacket
 		(
-			thisEntity.GetTransform(thisEntity.GetTag()).position.x,
-			thisEntity.GetTransform(thisEntity.GetTag()).position.y,
-			networkTickRate,
+			{mEntity.GetTransform("player").position.x, mEntity.GetTransform("player").position.y},
+			appElapsedTime,
 			0,
-			4444
+			mClient->GetHostPort()
 		);
 
-		connectionManager->ListenForPacket(4444);
+		//Check to see if the server sends any data to the client.
+		mClient->RecievePacket();
 
 		networkTickRate = 0.f;
 	}
 
-
-	
-	
 	//Update the position of the sprite on this client's machine.
 	mScene->GetRegistery()->UpdateRendererComponent("player");
-	mScene->GetRegistery()->UpdateRendererComponent("playerTwo");
 }
 
 void GameState::OnAttach()
@@ -75,6 +71,5 @@ void GameState::OnAttach()
 
 void GameState::OnDetach()
 {
-	//delete player;
 
 }

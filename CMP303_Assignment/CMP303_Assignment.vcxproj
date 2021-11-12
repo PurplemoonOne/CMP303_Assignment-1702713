@@ -148,7 +148,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Application\Network\Network.cpp" />
+    <ClCompile Include="Application\Network\Client.cpp" />
+    <ClCompile Include="Application\Network\Host.cpp" />
     <ClCompile Include="Application\Scene\Scene.cpp" />
     <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="EntryPoint.cpp">
@@ -172,7 +173,9 @@
     <ClInclude Include="Application\Events\Jump.h" />
     <ClInclude Include="Application\Input\GamePad.h" />
     <ClInclude Include="Application\Log\Log.h" />
-    <ClInclude Include="Application\Network\Network.h" />
+    <ClInclude Include="Application\Network\Client.h" />
+    <ClInclude Include="Application\Network\Host.h" />
+    <ClInclude Include="Application\Network\NetworkUtilities.h" />
     <ClInclude Include="Application\pch.h" />
     <ClInclude Include="Application\State\State.h" />
     <ClInclude Include="Application\State\GameState.h" />

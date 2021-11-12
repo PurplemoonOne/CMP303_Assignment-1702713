@@ -14,8 +14,9 @@ Scene::Scene(sf::RenderWindow* window)
 		ASSERT(!mContext, "Only one application context can exist at once!");
 
 	mContext = this;
+
 	//Add States
-	states["game"] =	new GameState();
+	states["game"] = new GameState();
 
 	TransitionState("game");
 
@@ -48,13 +49,6 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 
 	//Submit all of the updated sprites to the renderer.
 	mRenderer.Submit(registery.GetRendererComponents());
-
-	if (debugInfo)
-	{
-		Connection* network = static_cast<GameState*>(mContext->mActiveState)->GetNetwork();
-		mRenderer.DebugRender(network->GetSocket().getLocalPort(), "192.168.0.27", static_cast<GameState*>(mContext->mActiveState)->GetClientPosition(), appElapsedTime);
-	}
-		
 }
 
 void Scene::Clean()

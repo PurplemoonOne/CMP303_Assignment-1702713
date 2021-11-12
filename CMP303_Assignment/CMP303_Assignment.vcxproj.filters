@@ -48,7 +48,10 @@
     <ClCompile Include="Application\Animation\Animation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Network\Network.cpp">
+    <ClCompile Include="Application\Network\Host.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Network\Client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -101,7 +104,13 @@
     <ClInclude Include="Application\Components\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Network\Network.h">
+    <ClInclude Include="Application\Network\Host.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Network\Client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Network\NetworkUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
