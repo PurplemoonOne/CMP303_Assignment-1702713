@@ -2,9 +2,6 @@
 #include <vector>
 #include <SFML/Graphics/Rect.hpp>
 
-//@author Dr Paul Robertson.
-//@note This class has been taken from the the CMP105 module with little modification
-//aside from marking functions inline and const (i.e Getter() const {...})
 
 class Animation
 {

@@ -1,53 +1,125 @@
 #include "Client.h"
 
+const sf::IpAddress SERVER_IP = sf::IpAddress::getLocalAddress();
+const uint16_t SERVER_PORT = 5555;
 
 Client::Client()
 {
-	// Fetch the machines IP Address.
-	mIPAdress ="127.0.0.1";
-	mPrivelage = Privelage::Client;
+	// Fetch the machines IP Address. 
+	mIPAdress = sf::IpAddress::getLocalAddress();
 	mPort = 4444;
-	mSocket.bind(mPort, mIPAdress);
+
+	//Bind the UDP socket to an available port.
+	if (mUDPSocket.bind(mPort, mIPAdress) != sf::UdpSocket::Done)
+	{
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mPort);
+		//Try again using any port which is available, SFML will find an unused port.	
+		if (mUDPSocket.bind((mPort = sf::UdpSocket::AnyPort), mIPAdress) != sf::UdpSocket::Done)
+		{
+			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
+		}
+
+		APP_TRACE("Bound UDP socket to port {0}", mPort);
+	}
+
+	mSelect.add(mUDPSocket);
 }
 
 Client::~Client()
 {
-	
+
 }
 
-void Client::SendPacket(std::pair<float, float> position, const float timeStamp, const int32_t id, const uint16_t port)
+void Client::ConnectToServer()
 {
-	Packet packet;
-	packet.id = id;
-	packet.time = timeStamp;
-	packet.x = position.first;
-	packet.y = position.second;
-
-	mHostIpAddress = "127.0.0.1";
-	mHostPort = 5555;
-
-	if (mSocket.send((const void*)&packet, sizeof(Packet), mHostIpAddress, mHostPort) != sf::UdpSocket::Done)
+	//Establish connection with the server.
+	if (mTCPSocket.connect(sf::IpAddress::getLocalAddress(), SERVER_PORT) != sf::TcpSocket::Done)
 	{
-		APP_ERROR("Could not send packet to server w/ port {0} : IP Address {1}", mHostPort, mHostIpAddress);
+		APP_ERROR("Connection failed!");
 	}
+}
 
+void Client::SendPacket(std::pair<float, float> position, const float timeStamp)
+{
+	GamePacket packet;
+
+	//Tell the server whether the client is spectating or streaming.
+	packet.append((const void*)mPrivelage, sizeof(mPrivelage));
+
+	if (mSelect.wait(sf::microseconds(16.0f)))
+	{
+		if (mSelect.isReady(mUDPSocket))
+		{
+			if (mUDPSocket.send(packet, SERVER_IP, SERVER_PORT) != sf::UdpSocket::Done)
+			{
+				APP_ERROR("Could not send packet to server!");
+			}
+		}
+	}
+	else
+	{
+		APP_TRACE("Client UDP socket not ready to send data.");
+	}
 }
 
 void Client::RecievePacket()
 {
-	Packet packet;
-	size_t sizeOfPacket = sizeof(Packet);
-	size_t recievedSize;
+	GamePacket packet;
 
-	//Do not block app, return right away.
-	mSocket.setBlocking(false);
-
-	if (mSocket.receive((void*)&packet, sizeOfPacket, recievedSize, mHostIpAddress, mHostPort) != sf::UdpSocket::Done)
+	if (mSelect.wait(sf::microseconds(16.0f)))
 	{
-		APP_ERROR("Did not recieve a packet from the server...")
+		if (mSelect.isReady(mUDPSocket))
+		{
+			//Variables to write the port and ip address of the sender.
+			sf::IpAddress serverIPAddress;
+			uint16_t serverPort;
+
+			if (mUDPSocket.receive(packet, serverIPAddress, serverPort) != sf::UdpSocket::Done)
+			{
+				APP_ERROR("Could not send packet to server!");
+			}
+		}
+	}
+	else
+	{
+		APP_TRACE("Client UDP socket not ready to recieve data.");
+	}
+}
+
+void Client::SendAssetsToServer(AssetList assetList)
+{
+	AssetPacket packet;
+
+	//Tell the server whether the client is spectating or streaming.
+	packet.append((const void*)mPrivelage, sizeof(mPrivelage));
+
+	//Upload the asset list so the server can replicate the game.
+	//In addition to inform other clients on simulating the game.
+	for (auto& item : assetList)
+	{
+		packet.append((const void*)&item, sizeof(item));
 	}
 
-	mMessages.push_back(packet);
+	if (mSelect.wait(sf::microseconds(16.0f)))
+	{
+		if (mSelect.isReady(mTCPSocket))
+		{
+			if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+			{
+				APP_ERROR("Could not send asset data to the server!");
+			}
+		}
+	}
+}
+
+void Client::SetClientPrivelage(ClientPrivelage privelage)
+{
+	mPrivelage = privelage;
+}
+
+void Client::Disconnect()
+{
+
 }
 
 

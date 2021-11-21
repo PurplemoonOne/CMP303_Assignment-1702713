@@ -5,7 +5,7 @@ Renderer::Renderer(sf::RenderWindow* lwindow)
 	window(lwindow)
 {
 	font = sf::Font();
-	font.loadFromFile("../Assets/Karla-Regular.ttf");
+	font.loadFromFile("Assets/font.ttf");
 }
 
 Renderer::~Renderer()
@@ -26,8 +26,6 @@ void Renderer::Submit(const std::vector<RendererComponent>& objects)
 
 void Renderer::DebugRender(uint16_t port, std::string ipa, sf::Vector2f clientPosition, const float appElapsedTime)
 {
-
-
 	sf::Text portText = sf::Text("Port : ", font);
 	portText.setPosition(window->getSize().x / 2.f, 0 + 256.f);
 	portText.setCharacterSize(11.f);

@@ -48,10 +48,16 @@
     <ClCompile Include="Application\Animation\Animation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Network\Host.cpp">
+    <ClCompile Include="Application\Network\Client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Network\Client.cpp">
+    <ClCompile Include="Application\Network\Connection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\State\MenuState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Network\NetworkUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,7 +92,7 @@
     <ClInclude Include="Application\Events\Event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Events\Jump.h">
+    <ClInclude Include="Application\Events\Move.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Camera\Camera.h">
@@ -104,17 +110,20 @@
     <ClInclude Include="Application\Components\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Network\Host.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Application\Network\Client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Network\NetworkUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Application\Network\Connection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\State\MenuState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="Application\Assets\Karla-Regular.ttf" />
+    <Font Include="Application\Assets\font.ttf" />
   </ItemGroup>
 </Project>

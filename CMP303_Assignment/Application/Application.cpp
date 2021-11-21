@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Application.h"
 #include "Log/Log.h"
-
+#include <iostream>
 #include <SFML/Window.hpp>
 
 Application* Application::sApp = nullptr;
@@ -72,35 +72,26 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Sc
 
 void Application::Run()
 {
-
 	sf::Time elapsed;
-	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Network Systems");
+	sf::RenderWindow window(sf::VideoMode(1920, 1080), "303 Assignment");
 
 	Keyboard input;
 	Scene scene = Scene(&window);
 
 	float appElapsedTime = 0.f;
 
-	// Used to toggle network info such as average latency, port number
-	bool debugNetwork = false;
-
 	// run the program as long as the window is open
 	while (window.isOpen())
 	{
 		//Process the event queue.
 		ProcessEvents(window, input, scene);
+
 		//Calculate delta time.
 		elapsed = clock.restart();
 
-		if (input.IsKeyPressed(sf::Keyboard::Q))
-		{
-			debugNetwork = (debugNetwork == false) ? debugNetwork = true : debugNetwork = false;
-		}
-
 		//Update the application's context.
-		scene.UpdateActiveState(elapsed.asSeconds(), appElapsedTime, &input, nullptr, debugNetwork);
+		scene.UpdateActiveState(elapsed.asSeconds(), appElapsedTime, &input, nullptr);
 
 		appElapsedTime += 1.f * elapsed.asSeconds();
-		//APP_TRACE("Application elapsed time {0} ", appElapsedTime);
 	}
 }

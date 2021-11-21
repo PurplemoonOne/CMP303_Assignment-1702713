@@ -1,6 +1,8 @@
 #pragma once
 #include <unordered_map>
 #include "../Renderer/Renderer.h"
+#include "../Network/Client.h"
+
 class State;
 class Keyboard;
 class Gamepad;
@@ -16,6 +18,15 @@ public:
 	Registery* GetRegistery() { return &registery; }
 	void Clean();
 
+	// @brief Create a new client object.
+	void CreateClient(ClientPrivelage privelage);
+	Client* GetClient() { return mClient; }
+
+private:
+	/**	Networking code	**/
+	Client* mClient;
+
+	float mNetworkTickRate;
 private:
 	Renderer mRenderer;
 	Registery registery;

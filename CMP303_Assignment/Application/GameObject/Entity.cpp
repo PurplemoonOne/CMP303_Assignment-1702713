@@ -8,9 +8,24 @@ Entity::Entity(Scene* scene, const std::string & tag)
 	mScene->GetRegistery()->AddNewEntity(tag, sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 100.0f));
 }
 
+TransformComponent& Entity::GetTransform()
+{
+	return mScene->GetRegistery()->GetTransformComponent(mTag);
+}
+
 TransformComponent& Entity::GetTransform(const std::string& tag)
 {
 	return mScene->GetRegistery()->GetTransformComponent(tag);
+}
+
+TransformComponent& Entity::GetTransform(const uint16_t id)
+{
+	return mScene->GetRegistery()->GetTransformComponent(id);
+}
+
+RendererComponent& Entity::GetRenderer()
+{
+	return mScene->GetRegistery()->GetRendererComponent(mTag);
 }
 
 RendererComponent& Entity::GetRenderer(const std::string& tag)
@@ -18,7 +33,12 @@ RendererComponent& Entity::GetRenderer(const std::string& tag)
 	return mScene->GetRegistery()->GetRendererComponent(tag);
 }
 
-AnimatorComponent& Entity::GetAnimaton(const std::string& tag)
+RendererComponent& Entity::GetRenderer(const uint16_t id)
+{
+	return mScene->GetRegistery()->GetRendererComponent(id);
+}
+
+AnimatorComponent& Entity::GetAnimation(const std::string& tag)
 {
 	return mScene->GetRegistery()->GetAnimationComponent(tag);
 }
@@ -27,3 +47,4 @@ TextureComponent& Entity::GetTexture(const std::string& tag)
 {
 	return mScene->GetRegistery()->GetTextureComponent(tag);
 }
+

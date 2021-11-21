@@ -11,10 +11,18 @@ public:
 	Entity(const Entity&) = default;
 	Entity(Scene* scene, const std::string& = "Entity");
 
-	TransformComponent& GetTransform(const std::string& tag );
-	RendererComponent& GetRenderer(const std::string& tag   );
-	AnimatorComponent& GetAnimaton(const std::string& tag   );
-	TextureComponent& GetTexture(const std::string& tag     );
+	TransformComponent& GetTransform();
+	TransformComponent& GetTransform(const std::string& tag);
+	TransformComponent& GetTransform(const uint16_t tag );
+
+	RendererComponent& GetRenderer();
+	RendererComponent& GetRenderer(const std::string& tag);
+	RendererComponent& GetRenderer(const uint16_t tag   );
+
+	AnimatorComponent& GetAnimation(const std::string& tag);
+
+	TextureComponent& GetTexture(const std::string& tag);
+
 
 	const std::string& GetTag() const { return mTag; }
 
