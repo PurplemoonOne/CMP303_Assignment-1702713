@@ -21,10 +21,10 @@
     <ClCompile Include="Application\Server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Log\Log.cpp">
+    <ClCompile Include="Network\Connection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Network\Connection.cpp">
+    <ClCompile Include="Log\ServerLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,10 +32,10 @@
     <ClInclude Include="Application\Server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Log\Log.h">
+    <ClInclude Include="Network\Connection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Network\Connection.h">
+    <ClInclude Include="Log\ServerLog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

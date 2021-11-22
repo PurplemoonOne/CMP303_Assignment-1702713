@@ -15,7 +15,7 @@ public:
 	void TransitionState(std::string state);
 	void UpdateActiveState(const float time, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad, bool debugInfo = false);
 
-	Registery* GetRegistery() { return &registery; }
+	Registery* GetRegistery() { return &mRegistery; }
 	void Clean();
 
 	// @brief Create a new client object.
@@ -29,9 +29,9 @@ private:
 	float mNetworkTickRate;
 private:
 	Renderer mRenderer;
-	Registery registery;
+	Registery mRegistery;
 	State* mActiveState;
-	std::unordered_map<std::string, State*> states;
+	std::unordered_map<std::string, State*> mStates;
 
 	static Scene* mContext;
 };

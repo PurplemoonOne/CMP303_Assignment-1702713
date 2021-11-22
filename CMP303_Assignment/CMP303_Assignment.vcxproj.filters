@@ -36,9 +36,6 @@
     <ClCompile Include="Application\Input\InputHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Camera\Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Application\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,13 +48,10 @@
     <ClCompile Include="Application\Network\Client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Network\Connection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Application\State\MenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Network\NetworkUtilities.cpp">
+    <ClCompile Include="Application\Camera\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,9 +89,6 @@
     <ClInclude Include="Application\Events\Move.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Camera\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Application\Renderer\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -116,10 +107,10 @@
     <ClInclude Include="Application\Network\NetworkUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Network\Connection.h">
+    <ClInclude Include="Application\State\MenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\State\MenuState.h">
+    <ClInclude Include="Application\Camera\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

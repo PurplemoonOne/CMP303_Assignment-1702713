@@ -72,7 +72,15 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 		mStreamButton.GetRenderer().graphics.setFillColor(sf::Color::Green);
 		if (keyboard->MouseLeftButtonDown())
 		{
-			mScene->CreateClient(ClientPrivelage::Stream);
+			if (mScene->GetClient() == nullptr)
+			{
+				mScene->CreateClient(ClientPrivelage::Stream);
+			}
+			else
+			{
+				mScene->GetClient()->SetClientPrivelage(ClientPrivelage::Stream);
+			}
+
 			bGameState = true;
 		}
 	}
@@ -85,7 +93,15 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 		mSpectateButton.GetRenderer().graphics.setFillColor(sf::Color::Green);
 		if (keyboard->MouseLeftButtonDown())
 		{
-			mScene->CreateClient(ClientPrivelage::Spectate);
+			if (mScene->GetClient() == nullptr)
+			{
+				mScene->CreateClient(ClientPrivelage::Spectate);
+			}
+			else
+			{
+				mScene->GetClient()->SetClientPrivelage(ClientPrivelage::Spectate);
+			}
+
 			bSpectateState = true;
 		}
 	}

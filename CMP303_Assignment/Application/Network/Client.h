@@ -10,7 +10,10 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendPacket(std::pair<float, float> position, const float timeStamp);
+	void SendPacket(std::pair<float, float> position, const float timeStamp, const sf::Uint32 id);
+
+	// @brief Inform the server about the assets we wish to predict positions etc for.
+	void SendAssetsToServer(AssetList assetTypes);
 
 	// @brief Recieve a packet from the host.
 	void RecievePacket();
@@ -19,32 +22,30 @@ public:
 	void ConnectToServer();
 
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
-	void Disconnect();
-
-	// @brief Inform the server about the assets we wish to predict positions etc for.
-	void SendAssetsToServer(AssetList assetTypes);
+	void Disconnect(const float appElapsedTime);
 
 public:
 
 	/**		Getters	& Setters	**/
+	const sf::UdpSocket& GetUDPSocket() const { return mUDPSocket; }
 
-	const sf::UdpSocket& GetSocket() const { return mUDPSocket; }
-	sf::UdpSocket& GetSocket() { return mUDPSocket; }
-
-	// @brief Return the client's porrt number.
-	const uint16_t GetLocalPort() const { return mUDPSocket.getLocalPort(); }
-	uint16_t GetLocalPort() { return mUDPSocket.getLocalPort(); }
+	const sf::TcpSocket& GetTCPSocket() const { return mTCPSocket; }
 
 	// @brief Return the IP Address of the client.
 	const sf::IpAddress& GetIPAdress() const { return mIPAdress; }
-	sf::IpAddress& GetIPAdress() { return mIPAdress; }
 
 	// @brief Set the client's privelage.
-	void SetClientPrivelage(ClientPrivelage privelage);
+	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
+
+	// @brief Set user name.
+	void SetUserName(const sf::String& name) { mUserName = name; }
+
+	// @brief Get the username of the client.
+	const sf::String& GetClientUserName() const { return mUserName; }
 
 private:
 	// @brief The client's machine IP
-	sf::IpAddress mIPAdress, mHostIpAddress = " ";
+	sf::IpAddress mIPAdress, mServerIpAddress;
 
 	// @brief This client's socket for send and recieving data.
 	sf::UdpSocket mUDPSocket;
@@ -52,17 +53,14 @@ private:
 	// @brief A socket to connect to the host.
 	sf::TcpSocket mTCPSocket;
 
-	// @brief Select object to check if a connection is ready to read.
-	sf::SocketSelector mSelect;
-
-	// @brief For Tcp connection, tracks how much data we have read/written and still to read/write
-	size_t mDataBuffer, mDataCount = 0;
-
 	// @brief This connection's port number.
-	uint16_t mPort = 0;
+	sf::Uint16 mUDPPort = 0000, mServerUDPPort = 0000;
 
 	// @brief Clients privelage
 	ClientPrivelage mPrivelage;
+
+	// @brief User name for the client.
+	sf::String mUserName;
 
 	// @brief A variable to hold the most up to date latency value.
 	float mLatency;

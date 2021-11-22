@@ -144,15 +144,13 @@
   <ItemGroup>
     <ClCompile Include="Application\Animation\Animation.cpp" />
     <ClCompile Include="Application\Application.cpp" />
+    <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="Application\Log\Log.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Application\Network\Client.cpp" />
-    <ClCompile Include="Application\Network\Connection.cpp" />
-    <ClCompile Include="Application\Network\NetworkUtilities.cpp" />
     <ClCompile Include="Application\Scene\Scene.cpp" />
-    <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -170,13 +168,13 @@
   <ItemGroup>
     <ClInclude Include="Application\Animation\Animation.h" />
     <ClInclude Include="Application\Application.h" />
+    <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Components\Components.h" />
     <ClInclude Include="Application\Events\Event.h" />
     <ClInclude Include="Application\Events\Move.h" />
     <ClInclude Include="Application\Input\GamePad.h" />
     <ClInclude Include="Application\Log\Log.h" />
     <ClInclude Include="Application\Network\Client.h" />
-    <ClInclude Include="Application\Network\Connection.h" />
     <ClInclude Include="Application\Network\NetworkUtilities.h" />
     <ClInclude Include="Application\pch.h" />
     <ClInclude Include="Application\State\State.h" />
@@ -184,7 +182,6 @@
     <ClInclude Include="Application\Scene\Scene.h" />
     <ClInclude Include="Application\Input\Keyboard.h" />
     <ClInclude Include="Application\Input\InputHandler.h" />
-    <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Renderer\Renderer.h" />
     <ClInclude Include="Application\GameObject\Entity.h" />
     <ClInclude Include="Application\State\MenuState.h" />

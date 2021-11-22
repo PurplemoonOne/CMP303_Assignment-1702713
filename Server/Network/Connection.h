@@ -10,28 +10,32 @@ public:
 	sf::TcpSocket* GetTCPSocket() { return mTCPSocket; }
 	sf::UdpSocket* GetUDPSocket() { return &mUDPSocket; }
 
-	const sf::IpAddress& GetConnectionIP() const { return mIPAdress; }
+	const sf::Uint16 GetTCPPort() const { return mTCPPort; }
+	const sf::Uint16 GetUDPPort() const { return mUDPPort; }
 
-	const uint16_t GetConnectionPort() const { return mPort; }
-
-	const uint16_t GetNetworkID() const { return mNetworkID; }
+	const sf::IpAddress& GetIPAddress() const { return mIPAdress; }
 
 	const ClientPrivelage GetConnectionPrivelage() const { return mConnPrivelage; }
+	void SetPrivelage(ClientPrivelage privelage) { mConnPrivelage = privelage; }
 
-	// @brief For the host to update the client this connection belongs to.
-	void Send();
+	// @brief Send important server announcements via TCP.
+	void SendTCP(ChatMSG& message);
 
-	// @brief Recieve the asset list from the connection.
-	AssetList RecieveAssets();
+	// @brief Send game updates to all spectaters.
+	void SendUDP(const GameData& gameData, const sf::Uint16 toPort, const sf::IpAddress& toIpAddress);
 
-	// @brief Recieve a packet from the connection.
-	void Recieve();
+	// @brief Recieve all kinds of data from connections.
+	void RecieveTCP(AssetData& assetData, ChatMSG& message);
+
+	// @brief Recieve all kinds of data from connections.
+	void RecieveUDP(GameData& gameData);
 
 private:
 
 	// @brief A pointer to the client's socket. (sf::Socket non-copyable)
 	sf::TcpSocket* mTCPSocket;
 
+	// @brief Connection UDP socket used to recieve updates about the game state.
 	sf::UdpSocket mUDPSocket;
 
 	// @brief The client's machine IP
@@ -41,8 +45,5 @@ private:
 	ClientPrivelage mConnPrivelage;
 
 	// @brief This connection's port number.
-	uint16_t mPort = 0;
-
-	uint16_t mNetworkID;
-
+	sf::Uint16 mTCPPort = 0000, mUDPPort = 0000;
 };

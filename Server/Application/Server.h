@@ -1,7 +1,8 @@
 #pragma once
 #include "SFML\Graphics.hpp"
-
 #include "../Network/Connection.h"
+
+#define lerp(a,b,t) a * (1 - t) + b * t
 
 class Server
 {
@@ -20,23 +21,25 @@ private:
 	void ListenForConections();
 
 	// @brief Checks for any new connections and accepts them.
-	void AcceptNewConnections();
+	void QueryConnections();
 
 	// @brief Recieves packets from the client.
-	void RecieveIncomingPackets();
+	void RecievePacketsFromStreamer();
 
 	// @brief Processes prediction of movement and hides any disparities between the client and server.
-	void Prediction();
+	void Prediction(const float deltaTime, sf::RectangleShape graphics[6], std::vector<GameData>& messages);
 
-	// @brief closes connections gracefully.
-	void CloseConnections();
+	// @brief Function to generate level assets based on the description given.
+	void GenerateAssets();
 
-	// @brief Recieve the list of assets from the client.
-	void RecieveAssetList();
+	// @brief Removes the connection and shuffles the array to fit the new amount of connections.
+	void RemoveConnection(sf::Uint32 element);
 
 private:
 
-	std::vector<Connection*> mConnections;
+	// @brief Prediction functions to smooth out desparities between client and server.
+	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB, const float currentTime);
+	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, const float currentTime);
 
 	// @brief A listener socket, used to listen for new connections.
 	sf::TcpListener mListener;
@@ -44,17 +47,21 @@ private:
 	// @brief Select object to query sockets for read or write operations.
 	sf::SocketSelector mSelect;
 
-	// @brief Container holding all the drawable objects.
-	std::vector<sf::RectangleShape> mDrawables;
+	// @brief Array of game updates.
+	std::vector<GameData> mMessages;
 
-	// @brief A variable to track latency.
+	// @brief Array of connections to the server.
+	std::vector<Connection*> mConnections;
+
+	std::vector<ChatMSG> mChatLog;
+
+	// @brief A variable to track latency with respect to the last two packets recieved.
 	float latency;
 
-	// @brief A variable to track jitter.
+	// @brief A variable to track jitter from the last N packets.
 	float jitter;
 
-	// @brief An array of rectange shapes representing the graphics from the streamer.
-	std::vector<sf::RectangleShape> mStreamersGraphics;
-
+	// @brief Structure containing a description of the game assets.
+	AssetData mAssetData;
 };
 

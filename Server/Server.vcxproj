@@ -146,13 +146,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EntryPoint.cpp" />
-    <ClCompile Include="Log\Log.cpp" />
     <ClCompile Include="Application\Server.cpp" />
+    <ClCompile Include="Log\ServerLog.cpp" />
     <ClCompile Include="Network\Connection.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Log\Log.h" />
     <ClInclude Include="Application\Server.h" />
+    <ClInclude Include="Log\ServerLog.h" />
     <ClInclude Include="Network\Connection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

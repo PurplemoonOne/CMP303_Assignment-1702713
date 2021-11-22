@@ -18,8 +18,8 @@ Scene::Scene(sf::RenderWindow* window)
 	mContext = this;
 
 	//Add States
-	states["game"] = new GameState();
-	states["menu"] = new MenuState((sf::Vector2f)window->getSize());
+	mStates["game"] = new GameState((sf::Vector2f)window->getSize());
+	mStates["menu"] = new MenuState((sf::Vector2f)window->getSize());
 
 	//Point to the render window.
 	mRenderer = Renderer(window);
@@ -30,15 +30,15 @@ Scene::Scene(sf::RenderWindow* window)
 
 Scene::~Scene()
 {  
-	if (states["game"])
+	if (mStates["game"])
 	{
-		delete states["game"];
-		states["game"] = nullptr;
+		delete mStates["game"];
+		mStates["game"] = nullptr;
 	}
-	if (states["menu"])
+	if (mStates["menu"])
 	{
-		delete states["menu"];
-		states["menu"] = nullptr;
+		delete mStates["menu"];
+		mStates["menu"] = nullptr;
 	}
 	if (mClient)
 	{
@@ -52,7 +52,7 @@ void Scene::TransitionState(std::string state)
 	if (mActiveState != nullptr)
 		mActiveState->OnDetach();
 
-	mActiveState = states[state];
+	mActiveState = mStates[state];
 	mActiveState->SetScene(this);
 	mActiveState->OnStart();
 }
@@ -65,8 +65,21 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 	mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
 
 	//Render the objects on client side first.
-	mRenderer.Submit(registery.GetRendererComponents());
+	mRenderer.Submit(mRegistery.GetRendererComponents());
 
+	//Send data to the server.
+	if(mActiveState == mStates["game"])
+	{
+		if (mNetworkTickRate > 0.0125f)
+		{
+			mNetworkTickRate = 0.f;
+
+			for (sf::Uint32 i = 5; i > 0; --i)
+			{
+				mClient->SendPacket({ mRegistery.GetTransformComponent(i).position.x, mRegistery.GetTransformComponent(i).position.y }, appElapsedTime, i);
+			}
+		}
+	}
 }
 
 void Scene::Clean()

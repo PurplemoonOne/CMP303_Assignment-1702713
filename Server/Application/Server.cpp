@@ -1,7 +1,9 @@
 #include "Server.h"
-#include "../Log/Log.h"
+#include "../Log/ServerLog.h"
 
-#define SERVER_PORT 5555
+const sf::IpAddress SERVER_IP = sf::IpAddress::getLocalAddress();
+const sf::Uint16 SERVER_PORT = 5555;
+
 
 Server::Server()
 	:
@@ -9,8 +11,7 @@ Server::Server()
 	jitter(0.f)
 {
 	//Initialise log system.
-	Logger::Init();
-
+	ServerLog::Init();
 }
 
 Server::~Server()
@@ -37,34 +38,6 @@ void Server::ProcessEvents(sf::RenderWindow& window)
 	}
 }
 
-void Server::RecieveAssetList()
-{
-	AssetPacket packet;
-
-	if (mSelect.wait(sf::microseconds(16.0f)))
-	{
-		for (auto& conn : mConnections)
-		{
-			if (conn->GetConnectionPrivelage() == ClientPrivelage::Stream)
-			{
-				if (mSelect.isReady(*conn->GetTCPSocket()))
-				{
-					conn->
-				}
-			}
-		}
-	}
-
-}
-
-void Server::RecieveIncomingPackets()
-{
-}
-
-void Server::Prediction()
-{
-}
-
 void Server::ListenForConections()
 {
 	if (mListener.listen(SERVER_PORT, sf::IpAddress::getLocalAddress()))
@@ -76,14 +49,39 @@ void Server::ListenForConections()
 	APP_TRACE("Listening....");
 }
 
-void Server::CloseConnections()
+void Server::RemoveConnection(sf::Uint32 element)
 {
+	if (mConnections.size() == 1)
+	{
+		delete mConnections.at(element);
+		mConnections.at(element) = nullptr;
+		mConnections.resize(0);
+	}
+	else
+	{
+		//Swap the dead connection to the end and resize the array to remove it.
+		for (sf::Uint32 i = element; i < (mConnections.size() - 1); ++i)
+		{
+			std::swap(mConnections.at(i), mConnections.at((i + 1)));
+		}
+
+		//Resize the array to the new number of connections.
+		mConnections.resize(mConnections.size() - 1);
+	}
+
+	mSelect.clear();
+
+	//Re-add the sockets that are still connected.
+	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+	{
+		mSelect.add(*mConnections.at(i)->GetTCPSocket());
+	}
 
 }
 
-void Server::AcceptNewConnections()
+void Server::QueryConnections()
 {
-	if (mSelect.wait())
+	if (mSelect.wait(sf::milliseconds(16.0f)))
 	{
 		if (mSelect.isReady(mListener))
 		{
@@ -93,13 +91,133 @@ void Server::AcceptNewConnections()
 			{
 				APP_ERROR("Accept failed!");
 			}
-		
+
 			APP_TRACE("New connection established!");
 			mConnections.push_back(new Connection(clientSocket));
+			mConnections.back()->SetPrivelage(ClientPrivelage::Stream);
+			//Add the connections TCP socket.
 			mSelect.add(*clientSocket);
+
+			//Add the connections UDP socket.
+			mSelect.add(*mConnections.back()->GetUDPSocket());
 		}
 
+		std::vector<ChatMSG> incomingChat;
+
+		//Read newly messages and or requests to leave the stream.
+		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+		{
+			if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+			{
+				AssetData assetData;
+				ChatMSG chatData;
+
+				mConnections.at(i)->RecieveTCP(assetData, chatData);
+
+				if (chatData.quit == 1)
+				{
+					RemoveConnection(i);
+				}
+				else
+				{
+					mChatLog.push_back(chatData);
+					incomingChat.push_back(chatData);
+				}
+			}
+		}
+
+		//Check if the TCP sockets are ready to send messages.
+		if (incomingChat.size() > 0)
+		{
+			for (auto& conn : mConnections)
+			{
+				for (sf::Uint32 j = 0; j < incomingChat.size(); ++j)
+				{
+					conn->SendTCP(incomingChat.at(j));
+				}
+			}
+		}
+		
+		incomingChat.clear();
+	}	
+}
+
+void Server::RecievePacketsFromStreamer()
+{	
+	for (auto& conn : mConnections)
+	{
+		if (conn->GetConnectionPrivelage() == ClientPrivelage::Stream)
+		{
+			GameData data;
+			conn->RecieveUDP(data);
+
+			//Check the packet recieved is valid. Should never recieve a packet on 0th second.
+			if (data.appElapsedTime != 0.f)
+				mMessages.push_back(data);
+			else
+				APP_WARNING("Did not recieve a valid packet from the streamer...");
+		}
 	}
+}
+
+sf::Vector2f Server::LinearPrediction(const GameData& messageA, const GameData& messageB, const float currentTime)
+{
+	float vX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	float vY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	float t0 = messageA.appElapsedTime - messageB.appElapsedTime;
+
+	return
+	{
+		messageA.x + vX * t0,
+		messageA.y + vY * t0
+	};
+}
+
+
+sf::Vector2f Server::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, const float currentTime)
+{
+	float tP0P1 = currentTime - messageA.appElapsedTime;
+	float vX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	float vY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	float aX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime) - (messageB.x - messageC.x) / (messageB.appElapsedTime - messageC.appElapsedTime);
+	float aY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime) - (messageB.y - messageC.y) / (messageB.appElapsedTime - messageC.appElapsedTime);
+	float sX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	float sY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
+	return { messageA.x + vX * tP0P1 + 0.5f * aX * currentTime * currentTime, messageA.y + vY * tP0P1 + 0.5f * aY * currentTime * currentTime };
+}
+
+
+
+void Server::Prediction(const float currentTime, sf::RectangleShape graphics[6], std::vector<GameData>& messages)
+{
+	if (mMessages.size() >= 12)
+	{
+		int offset = 6;
+		for (int i = 0; i < 6; ++i)
+		{
+			//We send 6 messages, 1 for each entity. We need atleast 2 messages for each entity to run a prediction.
+			//Hence offset the messages by 6 to obtain the second message for the 'i'th entity.
+			sf::Vector2f predictedPosition = LinearPrediction(mMessages.at(i), mMessages.at(i + offset), currentTime);
+
+			sf::Vector2f newPosition = sf::Vector2f
+			(
+				lerp(graphics[i].getPosition().x, predictedPosition.x, 0.9f),
+				lerp(graphics[i].getPosition().y, predictedPosition.y, 0.9f)
+			);
+
+			graphics[i].setPosition(newPosition);
+		}
+		mMessages.clear();
+		mMessages.resize(0);
+	}
+	else
+	{
+		APP_TRACE("Not enough messages to run predictions with.");
+	}
+}
+
+void Server::GenerateAssets()
+{
 }
 
 void Server::Run()
@@ -118,10 +236,19 @@ void Server::Run()
 
 	mSelect.add(mListener);
 
+	sf::RectangleShape graphics[6];
+	sf::Color colours[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::White, sf::Color::Yellow, sf::Color::Magenta };
+
+	for (int i = 0; i < 6; ++i)
+	{
+		graphics[i].setPosition(rand() % 1000 + 100, rand() % 1000 + 1000);
+		graphics[i].setFillColor(colours[i]);
+		graphics[i].setSize(sf::Vector2f(128.0f, 128.0f));
+	}
 	// run the program as long as the window is open
 	while (window.isOpen())
 	{
-		AcceptNewConnections();
+		QueryConnections();
 
 		//Process the event queue.
 		ProcessEvents(window);
@@ -129,14 +256,23 @@ void Server::Run()
 		//Calculate delta time.
 		elapsed = clock.restart();
 
-		window.clear(sf::Color(255, 0, 255, 255));
+		if (mConnections.size() > 0)
+		{
+			RecievePacketsFromStreamer();
+
+			Prediction(elapsed.asSeconds(), graphics, mMessages);
+		}
+
+		window.clear(sf::Color(125, 125, 125, 255));
+
+		for (sf::Uint32 i = 5; i > 0; --i)
+		{
+			window.draw(graphics[i]);
+		}
 
 		window.display();
 
 		appElapsedTime += 1.f * elapsed.asSeconds();
 	}
-
-
-	CloseConnections();
 
 }
