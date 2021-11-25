@@ -19,38 +19,38 @@ void MenuState::OnStart()
 	mStreamButton = Entity(mScene, "StreamButton");
 	mSpectateButton = Entity(mScene, "SpectateButton");
 
-	mStreamButton.GetRenderer().font.loadFromFile("Assets/font.ttf");
-	mSpectateButton.GetRenderer().font.loadFromFile("Assets/font.ttf");
+	mStreamButton.GetText().font.loadFromFile("Assets/font.ttf");
+	mSpectateButton.GetText().font.loadFromFile("Assets/font.ttf");
 
 	//Button text
-	mStreamButton.GetRenderer().text.setFont(mStreamButton.GetRenderer().font);
-	mStreamButton.GetRenderer().text.setCharacterSize(14);
-	mStreamButton.GetRenderer().text.setFillColor(sf::Color::White);
-	mStreamButton.GetRenderer().text.setOutlineColor(sf::Color::Black);
-	mStreamButton.GetRenderer().text.setOutlineThickness(1.2f);
-	mStreamButton.GetRenderer().text.setLetterSpacing(1.5f);
-	mStreamButton.GetRenderer().text.setString("Stream");
+	mStreamButton.GetText().text.setFont(mStreamButton.GetText().font);
+	mStreamButton.GetText().text.setCharacterSize(14);
+	mStreamButton.GetText().text.setFillColor(sf::Color::White);
+	mStreamButton.GetText().text.setOutlineColor(sf::Color::Black);
+	mStreamButton.GetText().text.setOutlineThickness(1.2f);
+	mStreamButton.GetText().text.setLetterSpacing(1.5f);
+	mStreamButton.GetText().text.setString("Stream");
 
-	mSpectateButton.GetRenderer().text.setFont(mSpectateButton.GetRenderer().font);
-	mSpectateButton.GetRenderer().text.setCharacterSize(14);
-	mSpectateButton.GetRenderer().text.setFillColor(sf::Color::White);
-	mSpectateButton.GetRenderer().text.setOutlineColor(sf::Color::Black);
-	mSpectateButton.GetRenderer().text.setOutlineThickness(1.2f);
-	mSpectateButton.GetRenderer().text.setLetterSpacing(1.5f);
-	mSpectateButton.GetRenderer().text.setString("Spectate");
+	mSpectateButton.GetText().text.setFont(mSpectateButton.GetText().font);
+	mSpectateButton.GetText().text.setCharacterSize(14);
+	mSpectateButton.GetText().text.setFillColor(sf::Color::White);
+	mSpectateButton.GetText().text.setOutlineColor(sf::Color::Black);
+	mSpectateButton.GetText().text.setOutlineThickness(1.2f);
+	mSpectateButton.GetText().text.setLetterSpacing(1.5f);
+	mSpectateButton.GetText().text.setString("Spectate");
 
 	//Button graphics
 	mStreamButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
 	mStreamButton.GetRenderer().graphics.setPosition(mScreenDimensions * 0.5f);
 	mStreamButton.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
 	mStreamButton.GetRenderer().graphics.setOrigin(0,0);
-	mStreamButton.GetRenderer().text.setPosition(mStreamButton.GetRenderer().graphics.getPosition());
+	mStreamButton.GetText().text.setPosition(mStreamButton.GetRenderer().graphics.getPosition());
 
 	mSpectateButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
 	mSpectateButton.GetRenderer().graphics.setPosition(sf::Vector2f(mScreenDimensions.x * 0.5f, mScreenDimensions.y - 256.f));
 	mSpectateButton.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
 	mSpectateButton.GetRenderer().graphics.setOrigin(0, 0);
-	mSpectateButton.GetRenderer().text.setPosition(mSpectateButton.GetRenderer().graphics.getPosition());
+	mSpectateButton.GetText().text.setPosition(mSpectateButton.GetRenderer().graphics.getPosition());
 }
 
 void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
@@ -118,7 +118,7 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	else if (bSpectateState)
 	{
 		bSpectateState = false;
-		//mScene->TransitionState("spectate");
+		mScene->TransitionState("spectate");
 	}
 
 }

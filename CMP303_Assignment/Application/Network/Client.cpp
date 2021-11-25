@@ -5,17 +5,32 @@ const sf::Uint16 SERVER_PORT = 5555;
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	return packet << data.appElapsedTime << data.id << data.x << data.y;
+	return packet << data.time << data.id << data.x << data.y;
+}
+
+sf::Packet& operator >>(sf::Packet& packet, GameData& data)
+{
+	return packet >> data.time >> data.id >> data.x >> data.y;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const AssetData& data)
 {
-	return packet << data.type << data.count;
+	return packet << data.time << data.type << data.count;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ChatMSG& data)
 {
-	return packet << data.message << data.timeStamp << data.id << data.quit;
+	return packet << data.time << data.message << data.id << data.quit;
+}
+
+sf::Packet& operator >>(sf::Packet& packet, ChatMSG& data)
+{
+	return packet >> data.time >> data.message >> data.id >> data.quit;
+}
+
+sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
+{
+	return packet << data.time << data.privelage;
 }
 
 Client::Client()
@@ -27,7 +42,7 @@ Client::Client()
 	//Bind the UDP socket to an available port.
 	if (mUDPSocket.bind(mUDPPort) != sf::UdpSocket::Done)
 	{
-		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPPort);
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPPort);		
 		//Try again using any port which is available, SFML will find an unused port.	
 		if (mUDPSocket.bind((mUDPPort = sf::UdpSocket::AnyPort)) != sf::UdpSocket::Done)
 		{
@@ -40,13 +55,10 @@ Client::Client()
 	{
 		APP_TRACE("Bound UDP socket to port {0}", mUDPPort);
 	}
-
-	
 }
 
 Client::~Client()
 {
-
 }
 
 void Client::ConnectToServer()
@@ -57,19 +69,51 @@ void Client::ConnectToServer()
 		APP_ERROR("Connection failed!");
 	}
 
+	sf::Packet packet;
+	ConnectionData data;
+	data.time = time(0);
+
+	if (mPrivelage == ClientPrivelage::Stream)
+	{
+		data.privelage = 0;
+		if (packet << data)
+		{
+			APP_ERROR("Streamer : Failed to pack connection data.");
+		}
+
+		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("Unable to send TCP connection data.");
+		}
+	}
+	else 
+	{
+		data.privelage = 1;
+		if (packet << data)
+		{
+			APP_ERROR("Spectator : Failed to pack connection data.");
+		}
+
+		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("Unable to send TCP connection data.");
+		}
+	}
+
 	mTCPSocket.setBlocking(false);
 	mUDPSocket.setBlocking(false);
 }
 
-void Client::SendPacket(std::pair<float, float> position, const float timeStamp, const sf::Uint32 id)
+void Client::SendGamePacket(std::pair<float, float> position)
 {
 	GameData data;
-	data.appElapsedTime = timeStamp;
-	data.id = id;
 	data.x = position.first;
 	data.y = position.second;
 
-	GamePacket packet;
+	time_t t = time(0);
+	data.time = (double)t;
+
+	sf::Packet packet;
 	if (!(packet << data))
 	{
 		APP_ERROR("Error! Could not append data to packet!");
@@ -90,9 +134,35 @@ void Client::SendPacket(std::pair<float, float> position, const float timeStamp,
 
 }
 
+bool Client::SendChatMessage(const sf::Text& message)
+{
+	ChatMSG buffer; 
+	sf::Packet packet;
+
+	buffer.message = message.getString();
+	buffer.id = 0; 
+	time_t t = time(0);
+	buffer.time = (double)t;
+	bool status = true;
+
+	if (!(packet << buffer))
+	{
+		APP_ERROR("Could not pack chat message!");
+		status = false;
+	}
+
+	if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+	{
+		APP_ERROR("Could not send asset data to the server!");
+		status = false;
+	}
+
+	return status;
+}
+
 void Client::RecievePacket()
 {
-	GamePacket packet;
+	sf::Packet packet;
 
 	//Variables to write the port and ip address of the sender.
 	sf::IpAddress serverIPAddress;
@@ -103,12 +173,19 @@ void Client::RecievePacket()
 	{
 		APP_ERROR("Could not send packet to server!");
 	}	
-	
+
+	GameData data;
+
+	if (!(packet >> data))
+	{
+		APP_ERROR("Could not unpack game update from server!");
+	}
+
 }
 
 void Client::SendAssetsToServer(AssetList assetList)
 {
-	AssetPacket packet;
+	sf::Packet packet;
 
 	//Tell the server whether the client is spectating or streaming.
 	packet.append((const void*)mPrivelage, sizeof(mPrivelage));
@@ -126,7 +203,7 @@ void Client::SendAssetsToServer(AssetList assetList)
 	}
 }
 
-void Client::Disconnect(const float appElapsedTime)
+void Client::Disconnect()
 {
 	ChatMSG data;
 	sf::Packet packet;
@@ -134,7 +211,6 @@ void Client::Disconnect(const float appElapsedTime)
 	data.id = 0;
 	data.quit = 1;
 	data.message = " ";
-	data.timeStamp = appElapsedTime;
 
 	packet << data;
 

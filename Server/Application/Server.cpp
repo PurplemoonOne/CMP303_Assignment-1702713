@@ -95,6 +95,7 @@ void Server::QueryConnections()
 			APP_TRACE("New connection established!");
 			mConnections.push_back(new Connection(clientSocket));
 			mConnections.back()->SetPrivelage(ClientPrivelage::Stream);
+
 			//Add the connections TCP socket.
 			mSelect.add(*clientSocket);
 
@@ -120,6 +121,7 @@ void Server::QueryConnections()
 				}
 				else
 				{
+					APP_TRACE("Chat message recieved : {0}", chatData.message.toAnsiString());
 					mChatLog.push_back(chatData);
 					incomingChat.push_back(chatData);
 				}
@@ -152,52 +154,57 @@ void Server::RecievePacketsFromStreamer()
 			conn->RecieveUDP(data);
 
 			//Check the packet recieved is valid. Should never recieve a packet on 0th second.
-			if (data.appElapsedTime != 0.f)
-				mMessages.push_back(data);
-			else
+			if (!(sizeof(data) == sizeof(GameData)))
+			{
 				APP_WARNING("Did not recieve a valid packet from the streamer...");
+
+			}
+			else
+			{
+				mMessages.push_back(data);
+			}
 		}
 	}
 }
 
-sf::Vector2f Server::LinearPrediction(const GameData& messageA, const GameData& messageB, const float currentTime)
+sf::Vector2f Server::LinearPrediction(const GameData& messageA, const GameData& messageB)
 {
-	float vX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	float vY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	float t0 = messageA.appElapsedTime - messageB.appElapsedTime;
+	float dt = messageA.time - messageB.time;
 
-	return
-	{
-		messageA.x + vX * t0,
-		messageA.y + vY * t0
-	};
+	float vX = (messageA.x - messageB.x) /dt;
+	float vY = (messageA.y - messageB.y) /dt;
+	
+	return { messageA.x + vX * dt, messageA.y + vY * dt };
+}
+
+sf::Vector2f Server::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC)
+{
+
+	float dtAB = messageA.time - messageB.time;
+	float dtBC = messageB.time - messageC.time;
+
+	float vX = (messageA.x - messageB.x) / dtAB;
+	float vY = (messageA.y - messageB.y) / dtAB;
+	float aX = (messageA.x - messageB.x) / dtAB - (messageB.x - messageC.x) / dtBC;
+	float aY = (messageA.y - messageB.y) / dtAB - (messageB.y - messageC.y) / dtBC;
+	float sX = (messageA.x - messageB.x) / dtAB;
+	float sY = (messageA.y - messageB.y) / dtAB;
+
+	return { messageA.x + vX * dtAB + 0.5f * aX * dtBC, messageA.y + vY * dtAB + 0.5f * aY * dtBC };
 }
 
 
-sf::Vector2f Server::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, const float currentTime)
+
+void Server::Prediction(const float currentTime, sf::RectangleShape* graphics, std::vector<GameData>& messages)
 {
-	float tP0P1 = currentTime - messageA.appElapsedTime;
-	float vX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	float vY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	float aX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime) - (messageB.x - messageC.x) / (messageB.appElapsedTime - messageC.appElapsedTime);
-	float aY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime) - (messageB.y - messageC.y) / (messageB.appElapsedTime - messageC.appElapsedTime);
-	float sX = (messageA.x - messageB.x) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	float sY = (messageA.y - messageB.y) / (messageA.appElapsedTime - messageB.appElapsedTime);
-	return { messageA.x + vX * tP0P1 + 0.5f * aX * currentTime * currentTime, messageA.y + vY * tP0P1 + 0.5f * aY * currentTime * currentTime };
-}
-
-
-
-void Server::Prediction(const float currentTime, sf::RectangleShape graphics[6], std::vector<GameData>& messages)
-{
-	if (mMessages.size() >= 12)
+	if (mMessages.size() >= 3)
 	{
-		int offset = 6;
-		for (int i = 0; i < 6; ++i)
+		int offset = 0;
+		for (int i = 0; i < 24; ++i)
 		{
 			//We send 6 messages, 1 for each entity. We need atleast 2 messages for each entity to run a prediction.
 			//Hence offset the messages by 6 to obtain the second message for the 'i'th entity.
-			sf::Vector2f predictedPosition = LinearPrediction(mMessages.at(i), mMessages.at(i + offset), currentTime);
+			sf::Vector2f predictedPosition = LinearPrediction(mMessages.at(i), mMessages.at(i + offset));
 
 			sf::Vector2f newPosition = sf::Vector2f
 			(
@@ -236,14 +243,14 @@ void Server::Run()
 
 	mSelect.add(mListener);
 
-	sf::RectangleShape graphics[6];
+	sf::RectangleShape graphics[24];
 	sf::Color colours[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::White, sf::Color::Yellow, sf::Color::Magenta };
 
-	for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < 12; ++i)
 	{
 		graphics[i].setPosition(rand() % 1000 + 100, rand() % 1000 + 1000);
-		graphics[i].setFillColor(colours[i]);
-		graphics[i].setSize(sf::Vector2f(128.0f, 128.0f));
+		graphics[i].setFillColor(sf::Color::Cyan);
+		graphics[i].setSize(sf::Vector2f(64.0f, 64.0f));
 	}
 	// run the program as long as the window is open
 	while (window.isOpen())

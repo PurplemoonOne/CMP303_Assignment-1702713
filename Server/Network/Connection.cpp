@@ -4,34 +4,38 @@
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	return packet << data.appElapsedTime << data.id << data.x << data.y;
+	return packet << data.time << data.id << data.x << data.y;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	return packet >> data.appElapsedTime >> data.id >> data.x >> data.y;
+	return packet >> data.time >> data.id >> data.x >> data.y;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const AssetData& data)
 {
-	return packet << data.type << data.count;
+	return packet << data.time << data.type << data.count;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, AssetData& data)
 {
-	return packet >> data.type >> data.count;
+	return packet >> data.time >> data.type >> data.count;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ChatMSG& data)
 {
-	return packet >> data.message >> data.timeStamp >> data.id >> data.quit;
+	return packet >> data.time >> data.message >> data.id >> data.quit;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ChatMSG& data)
 {
-	return packet << data.message << data.timeStamp << data.id << data.quit;
+	return packet << data.time << data.message << data.id << data.quit;
 }
 
+sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
+{
+	return packet >> data.time >> data.privelage;
+}
 
 Connection::Connection(sf::TcpSocket* socket)
 	:
@@ -73,7 +77,7 @@ void Connection::SendTCP(ChatMSG& message)
 
 void Connection::SendUDP(const GameData& gameData, const sf::Uint16 toPort, const sf::IpAddress& toIpAddress)
 {
-	GamePacket packet;
+	sf::Packet packet;
 
 	if (!(packet << gameData))
 	{

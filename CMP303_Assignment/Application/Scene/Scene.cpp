@@ -2,6 +2,7 @@
 #include "../Log/Log.h"
 #include "../State/GameState.h"
 #include "../State/MenuState.h"
+#include "../State/SpectateState.h"
 
 #include "Scene.h"
 #include <iostream>
@@ -19,6 +20,7 @@ Scene::Scene(sf::RenderWindow* window)
 
 	//Add States
 	mStates["game"] = new GameState((sf::Vector2f)window->getSize());
+	mStates["spectate"] = new SpectateState((sf::Vector2f)window->getSize());
 	mStates["menu"] = new MenuState((sf::Vector2f)window->getSize());
 
 	//Point to the render window.
@@ -35,11 +37,19 @@ Scene::~Scene()
 		delete mStates["game"];
 		mStates["game"] = nullptr;
 	}
+
+	if (mStates["spectate"])
+	{
+		delete mStates["spectate"];
+		mStates["spectate"] = nullptr;
+	}
+
 	if (mStates["menu"])
 	{
 		delete mStates["menu"];
 		mStates["menu"] = nullptr;
 	}
+
 	if (mClient)
 	{
 		delete mClient;
@@ -62,10 +72,11 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 	mNetworkTickRate += 1.f * time;
 
 	//Update the current state.
-	mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
+	if(mActiveState != nullptr)
+		mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
 
 	//Render the objects on client side first.
-	mRenderer.Submit(mRegistery.GetRendererComponents());
+	mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
 
 	//Send data to the server.
 	if(mActiveState == mStates["game"])
@@ -76,7 +87,7 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 
 			for (sf::Uint32 i = 5; i > 0; --i)
 			{
-				mClient->SendPacket({ mRegistery.GetTransformComponent(i).position.x, mRegistery.GetTransformComponent(i).position.y }, appElapsedTime, i);
+				mClient->SendGamePacket({ mRegistery.GetTransformComponent(i).position.x, mRegistery.GetTransformComponent(i).position.y });
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML\Network.hpp>
 #include "../Log/Log.h"
+#include <chrono>
 
 enum class ClientPrivelage
 {
@@ -9,38 +10,44 @@ enum class ClientPrivelage
 	Spectate
 };
 
-struct GameData
-{
-	//SFML implements types with respect to the platform .
-	//Still requires caution.
-	float appElapsedTime;
-	sf::Uint32 id;
+typedef unsigned short int AssetType;
+typedef unsigned short int AssetCount;
 
-	//According to the documentation, it is okay to use 'float and double' as
-	//these are mostly sized as 32-bits and 64-bits respectively.
+typedef std::chrono::system_clock::time_point Time;
+typedef std::chrono::system_clock Clock;
+
+// @brief Base packet for all data sent/recieved from the server.
+struct BaseData
+{
+	double time;
+};
+
+struct GameData : public BaseData
+{
+	sf::Uint32 id;
 	float x;
 	float y;
 };
 
-typedef unsigned short int AssetType;
-typedef unsigned short int AssetCount;
-
 // @brief Special packet structure for the server to send the client confirming a packet was recieved.
-struct ServerPingMSG
+struct ServerPingMSG : public BaseData
 {
-	const char* message = "Packet Good";
-	float timeStamp;
+	const char* message = "Packet Confirmed.";
 };
 
-struct ChatMSG
+struct ConnectionData : public BaseData
+{
+	sf::Uint8 privelage;	
+};
+
+struct ChatMSG : public BaseData
 {
 	sf::String message;
-	float timeStamp;
 	sf::Uint32 id;
 	sf::Uint32 quit = 0;
 };
 
-struct AssetData
+struct AssetData : public BaseData
 {
 	AssetType type;
 	AssetCount count;
@@ -49,20 +56,4 @@ struct AssetData
 };
 
 typedef std::initializer_list<AssetData> AssetList;
-
-class GamePacket : public sf::Packet
-{
-public:
-	GamePacket() = default;
-	GamePacket(const GamePacket& other) = default;
-	~GamePacket() = default;
-};
-
-class AssetPacket : public sf::Packet
-{
-public:
-	AssetPacket() = default;
-	AssetPacket(const AssetPacket& other) = default;
-	~AssetPacket() = default;
-};
 

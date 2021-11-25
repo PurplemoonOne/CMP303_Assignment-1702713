@@ -18,25 +18,28 @@ GameState::~GameState()
 void GameState::OnStart()
 {
 	//Initialise the boid graphics.
-	const std::string names[] = { "P1", "P2", "P3", "P4", "P5", "P6"};
 	const sf::Color colours[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::White, sf::Color::Yellow, sf::Color::Magenta };
 
-	//Push all the player data into the registery class.
-	for (uint32_t i = 0; i < 6; ++i)
+	int c = 0;
+	for (int i = 0; i < 24; ++i)
 	{
-		Entity entity = Entity(mScene, names[i]);
-		entity.GetRenderer(i).graphics.setFillColor(colours[i]);
-		entity.GetRenderer(i).graphics.setPosition(0.f, 0.f);
-		entity.GetRenderer(i).bInit = true;
+		//Create six boid objects.
+		mFlock.push_back(Entity(mScene, "B" + std::to_string(i)));
+		mFlock.back().GetRenderer().graphics.setSize(sf::Vector2f(32.0f, 32.0f));
+		mFlock.back().GetRenderer().graphics.setFillColor(colours[c]);
+		float xPos = rand() % 1000 + 1, yPos = rand() % 1000 + 1;
+		mFlock.back().GetRenderer().graphics.setPosition(xPos, yPos);
+		mFlock.back().GetTransform().position = sf::Vector2f(xPos, yPos);
 
-		mBoids.push_back(entity);
+		i == 5 || i == 11 || i == 17 ? c = 0 : ++c;
+		mBoidCount++;
 	}
+
+
 
 	InitHomeButton();
 
 	mScene->GetClient()->ConnectToServer();
-
-
 }
 
 void GameState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
@@ -53,28 +56,26 @@ void GameState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 
 	sf::Vector2f mouseCoordinates = sf::Vector2f(keyboard->MouseX(), keyboard->MouseY());
 	
-	//Calculate the seperation vectors
-	float desiredSeperation = 25.0f;
-	sf::Vector2f steer = sf::Vector2f(0, 0);
-	int count = 0;
-
-	for (auto& boid : mBoids)
+	Seperation(deltaTime);
+	for (auto& boid : mFlock)
 	{
-		
+		//Alignment.
+		sf::Vector2f align = mouseCoordinates - boid.GetTransform().position;
+		if (Magnitude(align) > 0.2f)
+		{
+			boid.GetTransform().position += Normalise(align) * 250.0f * deltaTime;
+		}
 	}
-
-
-
-
+	Cohesion(deltaTime);
 
 	//Update the position of the sprites.
-	for(int i = 0; i < 6; ++i)
+	for(int i = 0; i < mBoidCount; ++i)
 		mScene->GetRegistery()->UpdateRendererComponent(i);
 
 
 	if (QueryButton(keyboard))
 	{
-		mScene->GetClient()->Disconnect(appElapsedTime);
+		mScene->GetClient()->Disconnect();
 		mScene->TransitionState("menu");
 	}
 }
@@ -82,6 +83,9 @@ void GameState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 void GameState::OnDetach()
 {
 	mScene->GetRegistery()->ClearRegistery();
+	mBoidCount = 0;
+	mFlock.clear();
+	mFlock.resize(0);
 }
 
 bool GameState::QueryButton(Keyboard* keyboard)
@@ -115,122 +119,76 @@ void GameState::InitHomeButton()
 {
 	mHomeButton = Entity(mScene, "HomeButton");
 
-	mHomeButton.GetRenderer().font.loadFromFile("Assets/font.ttf");
+	mHomeButton.GetText().font.loadFromFile("Assets/font.ttf");
 
 	//Button text
-	mHomeButton.GetRenderer().text.setFont(mHomeButton.GetRenderer().font);
-	mHomeButton.GetRenderer().text.setCharacterSize(14);
-	mHomeButton.GetRenderer().text.setFillColor(sf::Color::White);
-	mHomeButton.GetRenderer().text.setOutlineColor(sf::Color::Black);
-	mHomeButton.GetRenderer().text.setOutlineThickness(1.2f);
-	mHomeButton.GetRenderer().text.setLetterSpacing(1.5f);
-	mHomeButton.GetRenderer().text.setString("Home");
+	mHomeButton.GetText().text.setFont(mHomeButton.GetText().font);
+	mHomeButton.GetText().text.setCharacterSize(14);
+	mHomeButton.GetText().text.setFillColor(sf::Color::White);
+	mHomeButton.GetText().text.setOutlineColor(sf::Color::Black);
+	mHomeButton.GetText().text.setOutlineThickness(1.2f);
+	mHomeButton.GetText().text.setLetterSpacing(1.5f);
+	mHomeButton.GetText().text.setString("Home");
 
 	mHomeButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
 	mHomeButton.GetRenderer().graphics.setPosition(mScreenDimensions * 0.8f);
 	mHomeButton.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
 	mHomeButton.GetRenderer().graphics.setOrigin(0, 0);
-	mHomeButton.GetRenderer().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition());
+	mHomeButton.GetText().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition());
 }
 
-sf::Vector2f Boid::Normalise(sf::Vector2f vector)
+inline void GameState::Seperation(const float deltaTime)
 {
-	float length = 0.f;
-	length = sqrt((vector.x * vector.x) + (vector.y * vector.y));
-	sf::Vector2f norm;
-	norm = vector / length;
-	return norm;
-}
+	sf::Vector2f centroid{};
+	float minDistance = 50.0f;
+	float seperationFactor = 2.7;
 
-sf::Vector2f Boid::Seperate(std::vector<Entity>& boids)
-{
-	float seperationFactor = 25.0f;
-	sf::Vector2f steer = sf::Vector2f(0.f, 0.f);
-	int count = 0;
-
-	for (auto& boid : boids)
+	for (auto& boid : mFlock)
 	{
-		sf::Vector2f difference = mEntity.GetTransform().position - boid.GetTransform().position;
-		float distance = sqrtf(difference.x * difference.x + difference.y * difference.y);
+		centroid += boid.GetTransform().position;
+	}
+	centroid *= 0.2f;
 
-		if ((distance > 0) && (distance < seperationFactor))
+
+	for (int i= 0; i < 24; ++i)
+	{
+		for (int j = 0; j < 24; ++j)
 		{
-			difference = Normalise(difference);
-			difference /= distance;
-			steer += difference;
-			count++;
+			sf::Vector2f distance{};
+			if (mFlock.at(j).GetTag() != mFlock.at(i).GetTag())
+			{
+				sf::Vector2f p0 = mFlock.at(j).GetTransform().position;
+				sf::Vector2f p1 = mFlock.at(i).GetTransform().position;
+
+				distance = p0 - p1;
+
+				if (Magnitude(distance) < minDistance)
+				{
+					mFlock.at(i).GetTransform().position += -(distance * seperationFactor) * deltaTime;
+				}
+			}
 		}
+
+		mFlock.at(i).GetTransform().position += -(Normalise(centroid) * seperationFactor) * deltaTime;
 	}
-
-	steer /= (float)count;
-
-	if (Magnitude(steer) > 0.f)
-	{
-		steer = Normalise(steer);
-	}
-
-	return steer;
 }
 
-sf::Vector2f Boid::Align(std::vector<Entity>& boids, sf::Vector2f velocity)
+inline void GameState::Cohesion(const float deltaTime)
 {
-	float neighbordist = 50.0f;
-	sf::Vector2f sum = sf::Vector2f(0.f, 0.f);
-	int count = 0;
+	sf::Vector2f centroid{};
 
-	for (auto& boid : boids) 
+	for (auto& boid : mFlock)
 	{
-		float distance = Magnitude(mEntity.GetTransform().position - boid.GetTransform().position);
-		if ((distance > 0) && (distance < neighbordist))
-		{
-			sum += velocity;
-			count++;
-		}
+		centroid += boid.GetTransform().position;
 	}
+	centroid *= 0.2f;
 
-	if (count > 0) {
-		sum /= (float)count;
-		sum = Normalise(sum);
-		sum *= 0.03f;
-		sf::Vector2f steer = sum - (Normalise(velocity) * 0.02f);;
-		return steer;
-	}
+	sf::Vector2f cohesion{};
 
-	return sf::Vector2f(0.f, 0.f);
-}
-
-sf::Vector2f Boid::Cohesion(std::vector<Entity>& boids, sf::Vector2f velocity)
-{
-	float neighbordist = 50;
-	sf::Vector2f sum = sf::Vector2f(0, 0);   
-	int count = 0;
-
-	for (auto& boid : boids)
+	for (auto& boid : mFlock)
 	{
-		float distance = Magnitude(mEntity.GetTransform().position - boid.GetTransform().position);
-
-		if ((distance > 0) && (distance < neighbordist)) 
-		{
-			sum += boid.GetTransform().position;
-			count++;
-		}
-	}
-	if (count > 0) 
-	{
-		sum /= (float)count;
-		sf::Vector2f target = sf::Vector2f(0.f, 0.f);
-		target = sum - mEntity.GetTransform().position;
-		target = Normalise(target);
-		sf::Vector2f steer = target - (Normalise(velocity) * 0.02f);
-		return steer;
-	}
-	else
-	{
-		return  sf::Vector2f(0.f, 0.f);
+		cohesion = centroid - boid.GetTransform().position;
+		boid.GetTransform().position += Normalise(cohesion) * 0.5f * deltaTime;
 	}
 }
 
-void Boid::ApplyVector(sf::Vector2f vector)
-{
-
-}

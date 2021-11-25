@@ -38,8 +38,8 @@ private:
 private:
 
 	// @brief Prediction functions to smooth out desparities between client and server.
-	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB, const float currentTime);
-	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, const float currentTime);
+	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
+	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
 
 	// @brief A listener socket, used to listen for new connections.
 	sf::TcpListener mListener;

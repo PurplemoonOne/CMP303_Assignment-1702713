@@ -6,8 +6,6 @@
 
 #include <memory>
 
-class InputHandler;
-
 class GameState : public State
 {
 public:
@@ -26,24 +24,31 @@ private:
 	// @brief An object that represents the playable sprite.
 	// @note We only need one instance of entity as we manipulate the correct entity 
 	// in memory based on the network ID.
-	Entity mEntity;
 	Entity mHomeButton;
 
 
 	sf::Vector2f mScreenDimensions;
-	std::vector<Entity> mBoids;
+	std::vector<Entity> mFlock;
+	Entity mShark;
+	int mBoidCount = 0;
+
+	// @brief Simple functions to calculate the rules of a boid.
+	
+	// @note the vector between each boid and the mouse  
+	// coordinates will serve as the alignment vector.
+	inline void Seperation(const float deltaTime);
+	inline void Cohesion(const float deltaTime);
+
+
+	inline float Magnitude(sf::Vector2f vector)
+	{
+		return sqrtf((vector.x * vector.x + vector.y * vector.y));
+	}
+
+	inline sf::Vector2f Normalise(sf::Vector2f vector)
+	{
+		return vector / (Magnitude(vector));
+	}
+
 };
 
-struct Boid
-{
-	Entity mEntity;
-
-	sf::Vector2f Seperate(std::vector<Entity>& boids);
-	sf::Vector2f Align(std::vector<Entity>& boids, sf::Vector2f velocity);
-	sf::Vector2f Cohesion(std::vector<Entity>& boids, sf::Vector2f velocity);
-
-	void ApplyVector(sf::Vector2f vector);
-
-	inline sf::Vector2f Normalise(sf::Vector2f vector);
-	inline float Magnitude(sf::Vector2f vector) { sqrtf(vector.x * vector.x + vector.y * vector.y); }
-};

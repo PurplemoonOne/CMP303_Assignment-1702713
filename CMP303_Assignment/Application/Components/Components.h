@@ -77,19 +77,39 @@ struct RendererComponent
 
 	RendererComponent(sf::Vector2f position, sf::Vector2f size, float rotation, sf::Color colour, sf::Font font = sf::Font(), sf::Text text = sf::Text())
 		:
-		graphics(size),
-		font(font),
-		text(text)
+		graphics(size)
 	{
 		bInit = true;
 	}
 
 	sf::RectangleShape graphics;
 	sf::Sprite sprite;
+
+	bool bInit = false;
+};
+
+struct TextComponent
+{
+	TextComponent() = default;
+	TextComponent(const TextComponent& other)
+		:
+		font(other.font),
+		text(other.text),
+		bInit(true)
+	{}
+
+	TextComponent(sf::Text& text, sf::Font& font)
+		:
+		font(font),
+		text(text),
+		bInit(true)
+	{}
+
 	sf::Font font;
 	sf::Text text;
 	bool bInit = false;
 };
+
 
 struct Registery
 {
@@ -99,10 +119,12 @@ struct Registery
 	std::vector<TagComponent>       tags;
 	std::vector<TransformComponent> transforms;
 	std::vector<RendererComponent>  graphics;
+	std::vector<TextComponent>		texts;
 	std::vector<TextureComponent>   textures;
 	std::vector<AnimatorComponent>  animations;
 
 	const std::vector<RendererComponent>& GetRendererComponents() const { return graphics; }
+	const std::vector<TextComponent>& GetTextComponents() const { return texts; }
 	const std::vector<TransformComponent>& GetTransformComponents() const { return transforms; }
 	const std::vector<AnimatorComponent>& GetAnimatorComponents() const { return animations; }
 	const std::vector<TextureComponent>& GetTextureComponents() const { return textures; }
@@ -118,6 +140,16 @@ struct Registery
 	RendererComponent& GetRendererComponent(const uint16_t id)
 	{
 		return graphics[id];
+	}
+
+	TextComponent& GetTextComponent(std::string tag)
+	{
+		return texts[idMap[tag]];
+	}
+
+	TextComponent& GetTextComponent(const uint16_t id)
+	{
+		return texts[id];
 	}
 
 	TransformComponent& GetTransformComponent(std::string tag) 
@@ -153,10 +185,17 @@ struct Registery
 	void ClearRegistery()
 	{
 		tags.clear();
+		tags.resize(0);
 		transforms.clear();
+		transforms.resize(0);
 		graphics.clear();
+		graphics.resize(0);
 		textures.clear();
+		textures.resize(0);
+		texts.clear();
+		texts.resize(0);
 		animations.clear();
+		animations.resize(0);
 	}
 
 	// @brief Insert a new entity into memory.
@@ -171,6 +210,7 @@ struct Registery
 		graphics.push_back(rComp);
 		textures.push_back(TextureComponent());
 		animations.push_back(AnimatorComponent());
+		texts.push_back(TextComponent());
 
 		transforms.back().id = transforms.size() - 1;
 		idMap.emplace(tag, transforms.back().id);
@@ -206,6 +246,18 @@ struct Registery
   		graphics[id].graphics.setPosition(transforms[id].position);
 		graphics[id].graphics.setRotation(transforms[id].rotation);
 		graphics[id].graphics.setScale(transforms[id].scale);
+	}
+
+	// @brief Update the entity's renderer component using it's assigned ID.
+	void UpdateTextComponent(const uint32_t id)
+	{
+		texts[id].text.setPosition(transforms[id].position);
+	}
+
+	// @brief Update the entity's renderer component using it's assigned ID.
+	void UpdateTextComponent(const std::string& tag)
+	{
+		texts[idMap[tag]].text.setPosition(transforms[idMap[tag]].position);
 	}
 
 	// @brief Update the entity's renderer component using a custom tag.

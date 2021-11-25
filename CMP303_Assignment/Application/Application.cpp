@@ -64,6 +64,12 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Sc
 				keyboard.SetMouseRightButton(false);
 			}
 			break;
+		case sf::Event::TextEntered:
+			if (event.text.unicode > 31 && event.text.unicode < 127)
+			{
+				keyboard.SetCharacter((char)event.text.unicode);
+			}
+			break;
 		default:
 			break;
 		}

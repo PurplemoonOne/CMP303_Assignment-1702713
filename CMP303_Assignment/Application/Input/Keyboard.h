@@ -12,6 +12,7 @@ public:
 		mMouse.y = 0;
 		mMouse.left = false;
 		mMouse.right = false;
+		mCharacter = 0;
 	}
 
 	virtual ~Keyboard()
@@ -60,6 +61,13 @@ public:
 		else
 			return false;
 	}
+
+	// @brief Set the most recently pressed character
+	// @param[in] A character.
+	inline void SetCharacter(char character) { mCharacter = character; }
+
+	// @brief Get the previously pressed keyboard character.
+	const char GetRecentCharacter() const { return mCharacter; }
 
 	// @brief Set the 'X' position of the cursor.
 	// @param[in] Recieves a signed integer value representing the 'X' position.
@@ -120,5 +128,6 @@ public:
 private:
 	Keys keys[256]{ false, nullptr };
 	Mouse mMouse;
+	char mCharacter;
 };
 

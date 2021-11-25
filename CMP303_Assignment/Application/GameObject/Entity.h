@@ -17,7 +17,11 @@ public:
 
 	RendererComponent& GetRenderer();
 	RendererComponent& GetRenderer(const std::string& tag);
-	RendererComponent& GetRenderer(const uint16_t tag   );
+	RendererComponent& GetRenderer(const uint16_t tag    );
+
+	TextComponent& GetText();
+	TextComponent& GetText(const std::string& tag);
+	TextComponent& GetText(const uint16_t tag);
 
 	AnimatorComponent& GetAnimation(const std::string& tag);
 

@@ -151,6 +151,7 @@
     </ClCompile>
     <ClCompile Include="Application\Network\Client.cpp" />
     <ClCompile Include="Application\Scene\Scene.cpp" />
+    <ClCompile Include="Application\State\SpectateState.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -177,6 +178,7 @@
     <ClInclude Include="Application\Network\Client.h" />
     <ClInclude Include="Application\Network\NetworkUtilities.h" />
     <ClInclude Include="Application\pch.h" />
+    <ClInclude Include="Application\State\SpectateState.h" />
     <ClInclude Include="Application\State\State.h" />
     <ClInclude Include="Application\State\GameState.h" />
     <ClInclude Include="Application\Scene\Scene.h" />

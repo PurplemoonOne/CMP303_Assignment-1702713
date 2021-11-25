@@ -32,7 +32,6 @@ private:
 	Registery mRegistery;
 	State* mActiveState;
 	std::unordered_map<std::string, State*> mStates;
-
 	static Scene* mContext;
 };
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "NetworkUtilities.h"
-
+#include "SFML/Graphics/Text.hpp"
 
 class Client
 {
@@ -10,7 +10,9 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendPacket(std::pair<float, float> position, const float timeStamp, const sf::Uint32 id);
+	void SendGamePacket(std::pair<float, float> position);
+
+	bool SendChatMessage(const sf::Text& message);
 
 	// @brief Inform the server about the assets we wish to predict positions etc for.
 	void SendAssetsToServer(AssetList assetTypes);
@@ -22,7 +24,7 @@ public:
 	void ConnectToServer();
 
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
-	void Disconnect(const float appElapsedTime);
+	void Disconnect();
 
 public:
 

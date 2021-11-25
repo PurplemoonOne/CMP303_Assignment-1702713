@@ -38,6 +38,21 @@ RendererComponent& Entity::GetRenderer(const uint16_t id)
 	return mScene->GetRegistery()->GetRendererComponent(id);
 }
 
+TextComponent& Entity::GetText()
+{
+	return mScene->GetRegistery()->GetTextComponent(mTag);
+}
+
+TextComponent& Entity::GetText(const std::string& tag)
+{
+	return mScene->GetRegistery()->GetTextComponent(tag);
+}
+
+TextComponent& Entity::GetText(const uint16_t id)
+{
+	return mScene->GetRegistery()->GetTextComponent(id);
+}
+
 AnimatorComponent& Entity::GetAnimation(const std::string& tag)
 {
 	return mScene->GetRegistery()->GetAnimationComponent(tag);
