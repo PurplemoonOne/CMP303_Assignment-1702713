@@ -6,12 +6,9 @@
 enum class ClientPrivelage
 {
 	None = 0,
-	Stream,
-	Spectate
+	Host,
+	Client
 };
-
-typedef unsigned short int AssetType;
-typedef unsigned short int AssetCount;
 
 typedef std::chrono::system_clock::time_point Time;
 typedef std::chrono::system_clock Clock;
@@ -24,7 +21,7 @@ struct BaseData
 
 struct GameData : public BaseData
 {
-	sf::Uint32 id;
+	sf::Int32 objectID = -1;
 	float x;
 	float y;
 };
@@ -35,25 +32,30 @@ struct ServerPingMSG : public BaseData
 	const char* message = "Packet Confirmed.";
 };
 
+typedef unsigned short int AssetType;
+typedef unsigned short int AssetCount;
+
 struct ConnectionData : public BaseData
 {
-	sf::Uint8 privelage;	
+	sf::Uint8 privelage;
+	sf::Uint16 UdpPort;
+	AssetType type;
+	AssetCount count = 0;
+	float sizeX;
+	float sizeY;
 };
 
-struct ChatMSG : public BaseData
+struct ClientPortAndIP
+{
+	sf::Uint16 udpPort;
+	sf::String ip;
+};
+
+struct DisconnectPCKT : public BaseData
 {
 	sf::String message;
 	sf::Uint32 id;
 	sf::Uint32 quit = 0;
 };
 
-struct AssetData : public BaseData
-{
-	AssetType type;
-	AssetCount count;
-	float sizeX;
-	float sizeY;
-};
-
-typedef std::initializer_list<AssetData> AssetList;
 

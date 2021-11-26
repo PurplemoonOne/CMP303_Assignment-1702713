@@ -1,11 +1,22 @@
 #include "../pch.h"
 #include "../Log/Log.h"
-#include "../State/GameState.h"
+#include "../State/HostState.h"
 #include "../State/MenuState.h"
-#include "../State/SpectateState.h"
+#include "../State/ClientState.h"
 
 #include "Scene.h"
 #include <iostream>
+
+
+//Custom sort functor for sorting packets into ID order.
+class GamePacketIDSort
+{
+public:
+	inline bool operator()(const GameData& p1, const GameData& p2)
+	{
+		return (p1.objectID < p2.objectID);
+	}
+};
 
 Scene* Scene::mContext = nullptr;
 
@@ -19,8 +30,8 @@ Scene::Scene(sf::RenderWindow* window)
 	mContext = this;
 
 	//Add States
-	mStates["game"] = new GameState((sf::Vector2f)window->getSize());
-	mStates["spectate"] = new SpectateState((sf::Vector2f)window->getSize());
+	mStates["host"] = new HostState((sf::Vector2f)window->getSize());
+	mStates["client"] = new ClientState((sf::Vector2f)window->getSize());
 	mStates["menu"] = new MenuState((sf::Vector2f)window->getSize());
 
 	//Point to the render window.
@@ -32,16 +43,16 @@ Scene::Scene(sf::RenderWindow* window)
 
 Scene::~Scene()
 {  
-	if (mStates["game"])
+	if (mStates["host"])
 	{
-		delete mStates["game"];
-		mStates["game"] = nullptr;
+		delete mStates["host"];
+		mStates["host"] = nullptr;
 	}
 
-	if (mStates["spectate"])
+	if (mStates["client"])
 	{
-		delete mStates["spectate"];
-		mStates["spectate"] = nullptr;
+		delete mStates["client"];
+		mStates["client"] = nullptr;
 	}
 
 	if (mStates["menu"])
@@ -78,19 +89,106 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 	//Render the objects on client side first.
 	mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
 
+	//Check for new ports.
+
 	//Send data to the server.
-	if(mActiveState == mStates["game"])
+	//Host code.
+	if(mActiveState == mStates["host"])
 	{
+		//Host sends data about boid.
+
+		sf::Uint32 boidCount = static_cast<HostState*>(mActiveState)->GetBoidCount();
 		if (mNetworkTickRate > 0.0125f)
 		{
 			mNetworkTickRate = 0.f;
 
-			for (sf::Uint32 i = 5; i > 0; --i)
+			for (sf::Uint32 i = 0; i < boidCount; ++i)
 			{
-				mClient->SendGamePacket({ mRegistery.GetTransformComponent(i).position.x, mRegistery.GetTransformComponent(i).position.y });
+				mClient->SendGamePacket({ mRegistery.GetTransformComponent(i).position.x, mRegistery.GetTransformComponent(i).position.y}, i);
+			}
+		}
+	
+		mClient->RecievePacket();
+
+		if (mClient->GetGameData().size() > 2)
+		{
+			//Obtain the predicted posistion.
+			sf::Vector2f predictedPosition = LinearPrediction(mClient->GetGameData().at(0), mClient->GetGameData().at(1));
+
+			sf::Vector2f newPosition = sf::Vector2f
+			(
+				//Linearly interpolate between the last position and new position by 60%
+				lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.6f),
+				lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.6f)
+			);
+
+			//Update the new position.
+			mRegistery.GetRendererComponent("shark").graphics.setPosition(newPosition);
+		}
+	}
+
+	//Client code
+	else if (mActiveState == mStates["client"])
+	{
+		bool hasAssets = static_cast<ClientState*>(mActiveState)->HasAssets();
+
+		if (!hasAssets)
+		{
+			static_cast<ClientState*>(mActiveState)->GenerateHostAssets();
+		}
+
+		//Client sends data about shark.
+		sf::Uint32 boidCount = static_cast<ClientState*>(mActiveState)->GetBoidCount();
+
+		if (mNetworkTickRate > 0.0125f)
+		{
+			mNetworkTickRate = 0.f;
+
+			mClient->SendGamePacket
+			(
+				{ 
+					mRegistery.GetTransformComponent("shark").position.x, 
+					mRegistery.GetTransformComponent("shark").position.y
+				}, 
+				(boidCount + 1)
+			);
+		}
+
+		if (hasAssets)
+		{
+			mClient->RecievePacket();
+
+			//For linear we need at least two packets of data to determine position.
+			//After (recieving 2 * numberOfEntities) we can begin to predict new positions.
+			int offset = boidCount;
+			for (int i = 0; i < boidCount; ++i)
+			{
+				if (!((i + offset) < (boidCount * 2)))
+				{
+					continue;
+				}
+				else
+				{
+					//Obtain the predicted posistion.
+					sf::Vector2f predictedPosition = LinearPrediction(mClient->GetGameData().at(i), mClient->GetGameData().at(i + offset));
+
+					sf::Vector2f newPosition = sf::Vector2f
+					(
+						//Linear interpolate between the last position and new position by 60%
+						lerp(mRegistery.GetTransformComponent(i).position.x, predictedPosition.x, 0.6f),
+						lerp(mRegistery.GetTransformComponent(i).position.y, predictedPosition.y, 0.6f)
+					);
+
+					//Update the new position.
+					mRegistery.GetRendererComponent(i).graphics.setPosition(newPosition);
+				}
 			}
 		}
 	}
+
+	//Second draw using new interpolated methods.
+	mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
+
 }
 
 void Scene::Clean()
@@ -102,5 +200,30 @@ void Scene::CreateClient(ClientPrivelage privelage)
 {
 	mClient = new Client();
 	mClient->SetClientPrivelage(privelage);
+}
+
+inline sf::Vector2f Scene::LinearPrediction(const GameData& messageA, const GameData& messageB)
+{
+	float dt = messageA.time - messageB.time;
+
+	float vX = (messageA.x - messageB.x) / dt;
+	float vY = (messageA.y - messageB.y) / dt;
+
+	return { messageA.x + vX * dt, messageA.y + vY * dt };
+}
+
+inline sf::Vector2f Scene::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC)
+{
+	float dtAB = messageA.time - messageB.time;
+	float dtBC = messageB.time - messageC.time;
+
+	float vX = (messageA.x - messageB.x) / dtAB;
+	float vY = (messageA.y - messageB.y) / dtAB;
+	float aX = (messageA.x - messageB.x) / dtAB - (messageB.x - messageC.x) / dtBC;
+	float aY = (messageA.y - messageB.y) / dtAB - (messageB.y - messageC.y) / dtBC;
+	float sX = (messageA.x - messageB.x) / dtAB;
+	float sY = (messageA.y - messageB.y) / dtAB;
+
+	return { messageA.x + vX * dtAB + 0.5f * aX * dtBC, messageA.y + vY * dtAB + 0.5f * aY * dtBC };
 }
 

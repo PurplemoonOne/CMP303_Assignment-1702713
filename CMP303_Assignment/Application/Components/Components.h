@@ -130,6 +130,17 @@ struct Registery
 	const std::vector<TextureComponent>& GetTextureComponents() const { return textures; }
 	const std::vector<TagComponent>& GetTagComponents() const { return tags; }
 
+	// @brief allocate space in the registery.
+	void ReserveBuffer(size_t size)
+	{
+		graphics.resize(size);
+		texts.resize(size);
+		tags.resize(size);
+		transforms.resize(size);
+		textures.resize(size);
+		animations.resize(size);
+	}
+
 	// @brief Getters to retrieve specific tags. 
 
 	RendererComponent& GetRendererComponent(std::string tag)
@@ -199,21 +210,37 @@ struct Registery
 	}
 
 	// @brief Insert a new entity into memory.
-	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size)
+	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size, size_t index = -1)
 	{
 		TagComponent tComp = TagComponent(tag);
 		TransformComponent trComp = TransformComponent(initialPosition, 0.0f, size);
 		RendererComponent rComp = RendererComponent(initialPosition, size, 0.0f, sf::Color(255, 0, 0));
 
-		tags.push_back(tComp);
-		transforms.push_back(trComp);
-		graphics.push_back(rComp);
-		textures.push_back(TextureComponent());
-		animations.push_back(AnimatorComponent());
-		texts.push_back(TextComponent());
+		if (index == -1)
+		{
+			tags.push_back(tComp);
+			transforms.push_back(trComp);
+			graphics.push_back(rComp);
+			textures.push_back(TextureComponent());
+			animations.push_back(AnimatorComponent());
+			texts.push_back(TextComponent());
 
-		transforms.back().id = transforms.size() - 1;
-		idMap.emplace(tag, transforms.back().id);
+			transforms.back().id = transforms.size() - 1;
+			idMap.emplace(tag, transforms.back().id);
+		}
+		else
+		{
+			//Insert components based on ID.
+			tags.insert(tags.begin() + index, tComp);
+			transforms.insert(transforms.begin() + index, trComp);
+			graphics.insert(graphics.begin() + index, rComp);
+			textures.insert(textures.begin() + index, TextureComponent());
+			animations.insert(animations.begin() + index, AnimatorComponent());
+			texts.insert(texts.begin() + index, TextComponent());
+
+			transforms.at(index).id = index;
+			idMap.emplace(tag, index);
+		}
 	}
 	
 	// @brief Update the entity's transform component using a custom tag.

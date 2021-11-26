@@ -6,6 +6,9 @@
 class State;
 class Keyboard;
 class Gamepad;
+
+#define lerp(a,b,t) a * (1 - t) + b * t
+
 class Scene
 {
 public:
@@ -27,6 +30,12 @@ private:
 	Client* mClient;
 
 	float mNetworkTickRate;
+
+
+	// @brief Prediction functions to smooth out desparities between client and server.
+	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
+	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
+
 private:
 	Renderer mRenderer;
 	Registery mRegistery;

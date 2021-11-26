@@ -79,7 +79,7 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Sc
 void Application::Run()
 {
 	sf::Time elapsed;
-	sf::RenderWindow window(sf::VideoMode(1920, 1080), "303 Assignment");
+	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Client");
 
 	Keyboard input;
 	Scene scene = Scene(&window);

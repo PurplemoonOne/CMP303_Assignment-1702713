@@ -6,11 +6,40 @@
 
 #include <memory>
 
-class GameState : public State
+class Boid
 {
 public:
-	GameState(sf::Vector2f screenDimensions);
-	virtual ~GameState() override;
+	Boid() = default;
+	Boid(Scene* scene, std::string tag);
+	Boid(const Boid&) = default;
+	~Boid() = default;
+
+	Entity mEntity;
+	bool mAlive;
+
+};
+
+class Flock
+{
+public:
+	Flock() = default;
+	Flock(const Flock&) = default;
+	~Flock() = default;
+
+	void CreateFlock(Scene* scene, sf::Uint32 count);
+
+	std::vector<Boid> mBoids;
+
+};
+
+class HostState : public State
+{
+public:
+	HostState(sf::Vector2f screenDimensions);
+	virtual ~HostState() override;
+
+	sf::Uint32 GetBoidCount() const { return mBoidCount; }
+
 private:
 	virtual void OnStart() override;
 	virtual void OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) override;
@@ -20,25 +49,28 @@ private:
 	
 	bool QueryButton(Keyboard* keyboard);
 	void InitHomeButton();
+	void InitUI();
+	void InitShark();
 private:
-	// @brief An object that represents the playable sprite.
-	// @note We only need one instance of entity as we manipulate the correct entity 
-	// in memory based on the network ID.
-	Entity mHomeButton;
+	//Gameplay
+	Flock mFlock;
+	Entity mShark;
 
+	//UI
+	Entity mHomeButton;
+	Entity mLives;
+	Entity mLivesCount;
 
 	sf::Vector2f mScreenDimensions;
-	std::vector<Entity> mFlock;
-	Entity mShark;
-	int mBoidCount = 0;
+	sf::Uint32 mBoidCount = 0;
 
+private:
 	// @brief Simple functions to calculate the rules of a boid.
 	
 	// @note the vector between each boid and the mouse  
 	// coordinates will serve as the alignment vector.
 	inline void Seperation(const float deltaTime);
 	inline void Cohesion(const float deltaTime);
-
 
 	inline float Magnitude(sf::Vector2f vector)
 	{

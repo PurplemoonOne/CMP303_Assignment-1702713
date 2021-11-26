@@ -10,24 +10,26 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(std::pair<float, float> position);
+	void SendGamePacket(std::pair<float, float> position, sf::Uint32 id);
 
-	bool SendChatMessage(const sf::Text& message);
-
-	// @brief Inform the server about the assets we wish to predict positions etc for.
-	void SendAssetsToServer(AssetList assetTypes);
+	// @brief Recieve a TCP packet from the server.
+	ConnectionData& RecieveHostAssets();
 
 	// @brief Recieve a packet from the host.
 	void RecievePacket();
 
+	// @brief Fetch any new avaliable ports to send data to.
+	void GatherNewPorts();
+
 	// @brief Establish a connection with the server.
-	void ConnectToServer();
+	void ConnectToServer(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
-	void Disconnect();
+	bool Disconnect();
+
+	std::vector<GameData>& GetGameData() { return mGameData; }
 
 public:
-
 	/**		Getters	& Setters	**/
 	const sf::UdpSocket& GetUDPSocket() const { return mUDPSocket; }
 
@@ -38,12 +40,6 @@ public:
 
 	// @brief Set the client's privelage.
 	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
-
-	// @brief Set user name.
-	void SetUserName(const sf::String& name) { mUserName = name; }
-
-	// @brief Get the username of the client.
-	const sf::String& GetClientUserName() const { return mUserName; }
 
 private:
 	// @brief The client's machine IP
@@ -61,8 +57,11 @@ private:
 	// @brief Clients privelage
 	ClientPrivelage mPrivelage;
 
-	// @brief User name for the client.
-	sf::String mUserName;
+	// @brief An array of all the ports and Ip address to send game updates to.
+	std::vector<std::pair<sf::Uint16, sf::IpAddress>> mPeers;
+
+	// @brief An array holding game updates.
+	std::vector<GameData> mGameData;
 
 	// @brief A variable to hold the most up to date latency value.
 	float mLatency;

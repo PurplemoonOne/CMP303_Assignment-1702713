@@ -1,22 +1,37 @@
 #include "Server.h"
 #include "../Log/ServerLog.h"
-
-const sf::IpAddress SERVER_IP = sf::IpAddress::getLocalAddress();
+// @brief For connections accross other networks.
+const sf::IpAddress SERVER_PUBLIC_IP = sf::IpAddress::getPublicAddress();
+// @brief For connections within the same network.
+const sf::IpAddress SERVER_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
-
 
 Server::Server()
 	:
-	latency(0.f),
-	jitter(0.f)
+	mLatency(0.f),
+	mJitter(0.f),
+	mHasAssets(false)
 {
 	//Initialise log system.
 	ServerLog::Init();
+
+	mConnections.resize(1);
 }
 
 Server::~Server()
 {
+	mListener.close();
 }
+
+//Custom sort functor for sorting packets into ID order.
+class GamePacketIDSort
+{
+public:
+	inline bool operator()(const GameData& p1, const GameData& p2)
+	{
+		return (p1.objectID < p2.objectID);
+	}
+};
 
 void Server::ProcessEvents(sf::RenderWindow& window)
 {
@@ -49,40 +64,12 @@ void Server::ListenForConections()
 	APP_TRACE("Listening....");
 }
 
-void Server::RemoveConnection(sf::Uint32 element)
-{
-	if (mConnections.size() == 1)
-	{
-		delete mConnections.at(element);
-		mConnections.at(element) = nullptr;
-		mConnections.resize(0);
-	}
-	else
-	{
-		//Swap the dead connection to the end and resize the array to remove it.
-		for (sf::Uint32 i = element; i < (mConnections.size() - 1); ++i)
-		{
-			std::swap(mConnections.at(i), mConnections.at((i + 1)));
-		}
-
-		//Resize the array to the new number of connections.
-		mConnections.resize(mConnections.size() - 1);
-	}
-
-	mSelect.clear();
-
-	//Re-add the sockets that are still connected.
-	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
-	{
-		mSelect.add(*mConnections.at(i)->GetTCPSocket());
-	}
-
-}
-
 void Server::QueryConnections()
 {
+	//Wait for any sockets to be ready.
 	if (mSelect.wait(sf::milliseconds(16.0f)))
 	{
+		//Accept new connections.
 		if (mSelect.isReady(mListener))
 		{
 			sf::TcpSocket* clientSocket = new sf::TcpSocket();
@@ -93,80 +80,200 @@ void Server::QueryConnections()
 			}
 
 			APP_TRACE("New connection established!");
-			mConnections.push_back(new Connection(clientSocket));
-			mConnections.back()->SetPrivelage(ClientPrivelage::Stream);
-
-			//Add the connections TCP socket.
-			mSelect.add(*clientSocket);
-
-			//Add the connections UDP socket.
-			mSelect.add(*mConnections.back()->GetUDPSocket());
+	
+			//Initialise the connection.
+			InitConnection(clientSocket);
 		}
 
-		std::vector<ChatMSG> incomingChat;
-
-		//Read newly messages and or requests to leave the stream.
-		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+		//If we have other connections deal with them too.
+		if (mConnections.size() > 0)
 		{
-			if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+			//Read newly messages and or requests to leave the stream.
+			for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 			{
-				AssetData assetData;
-				ChatMSG chatData;
-
-				mConnections.at(i)->RecieveTCP(assetData, chatData);
-
-				if (chatData.quit == 1)
+				//Element 0 is reserved for host. Hence element 0 is NULL if no host.
+				if (mConnections.at(i) != nullptr)
 				{
-					RemoveConnection(i);
-				}
-				else
-				{
-					APP_TRACE("Chat message recieved : {0}", chatData.message.toAnsiString());
-					mChatLog.push_back(chatData);
-					incomingChat.push_back(chatData);
+					if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+					{
+
+						//If the client is still waiting for assets send them now.
+						if (!mConnections.at(i)->HasAssets())
+						{
+							if (mConnections.at(i)->SendTCP(mAssets))
+							{
+								mConnections.at(i)->SetHasAssets(true);
+							}
+						}
+
+						DisconnectPCKT chatData;
+						mConnections.at(i)->RecieveTCP(chatData);
+
+						if (chatData.quit == 1)
+						{
+							RemoveConnection(i);
+						}
+					}
 				}
 			}
 		}
-
-		//Check if the TCP sockets are ready to send messages.
-		if (incomingChat.size() > 0)
-		{
-			for (auto& conn : mConnections)
-			{
-				for (sf::Uint32 j = 0; j < incomingChat.size(); ++j)
-				{
-					conn->SendTCP(incomingChat.at(j));
-				}
-			}
-		}
-		
-		incomingChat.clear();
 	}	
 }
 
-void Server::RecievePacketsFromStreamer()
-{	
-	for (auto& conn : mConnections)
+
+void Server::RemoveConnection(sf::Uint32 element)
+{
+
+	APP_TRACE("Connection with client on port {0} has been closed.", mConnections.at(element)->GetTCPPort());
+
+	if (mConnections.at(element)->GetConnectionPrivelage() == ClientPrivelage::Host)
 	{
-		if (conn->GetConnectionPrivelage() == ClientPrivelage::Stream)
+		mHasAssets = false;
+		mHostCount--;
+	}
+	else
+	{
+		mClientCount--;
+	}
+	mTotalConnections--;
+
+	//Remove the reference to the socket from the select object.
+	mSelect.remove(*mConnections.at(element)->GetTCPSocket());
+
+	//Close the TCP socket.
+	mConnections.at(element)->GetTCPSocket()->disconnect();
+
+	//Delete the socket object from the heap.
+	delete mConnections.at(element)->GetTCPSocket();
+
+	//Delete the connection object from the array.
+	if (element == 0)
+	{
+		delete mConnections.at(element);
+		mConnections.at(element) = nullptr;
+	}
+	else
+	{
+		//Swap the dead connection to the end. (O(N))
+		for (sf::Uint32 i = element; i < (mConnections.size() - 1); ++i)
 		{
-			GameData data;
-			conn->RecieveUDP(data);
-
-			//Check the packet recieved is valid. Should never recieve a packet on 0th second.
-			if (!(sizeof(data) == sizeof(GameData)))
-			{
-				APP_WARNING("Did not recieve a valid packet from the streamer...");
-
-			}
-			else
-			{
-				mMessages.push_back(data);
-			}
+			std::swap(mConnections.at(i), mConnections.at((i + 1)));
 		}
+
+		delete mConnections.back();
+		mConnections.back() = nullptr;
+	}
+
+	//Resize the array to the new number of connections.
+	mConnections.resize(mTotalConnections + 1);
+
+	//Re-add the sockets that are still connected.
+	for (sf::Uint32 i = 1; i < mConnections.size(); ++i)
+	{
+		mSelect.add(*mConnections.at(i)->GetTCPSocket());
 	}
 }
 
+void Server::InitConnection(sf::TcpSocket* socket)
+{
+	//Create a new connection object.
+	Connection* connection = new Connection(socket);
+
+	//Gather information describing this connection.
+	ConnectionData connectionData;
+	connection->RecieveTCP(connectionData);
+
+	// If '1' then connection is a client.
+	if (connectionData.privelage == 0)
+	{
+		//If the number of host's is not greater than 1.
+		if (!((mHostCount + 1) > 1))
+		{
+			APP_TRACE("A new host has joined!");
+
+			connection->SetPrivelage(ClientPrivelage::Host);
+
+			mHostCount++;
+
+			//Streamer gets special ID.
+			connection->SetNetworkID(0);
+
+			//Add the streamers sockets to the select.
+			mSelect.add(*connection->GetTCPSocket());
+
+			//insert the streamer at the front of the array.
+			mConnections.insert(mConnections.begin(), connection);
+
+			//Finally set the streamer to initialised.
+			connection->SetInit(true);
+
+			//incriment total connections.
+			mTotalConnections++;
+
+			connection->SetHasAssets(true);
+
+			APP_TRACE("Generating assets...");
+
+			StoreClientAssetData(connectionData);
+			
+			APP_TRACE("Generating assets completed!");
+		}
+
+		//Another host attempted to join the server.
+		else
+		{
+			//Send a message to the client attepted to host and close connection.
+			APP_WARNING("Another connection attempted to host!");
+			DisconnectPCKT connectionData;
+			connectionData.message = "The server has too many hosts, try again later.";
+			connectionData.id = 0;
+			connectionData.time = time(0);
+			connection->SendTCP(connectionData);
+			delete connection;
+			connection = nullptr;
+			return;
+		}
+	}
+
+
+	//A client joined.
+	else if(connectionData.privelage == 1)
+	{
+		APP_TRACE("A new client has joined!");
+
+		connection->SetPrivelage(ClientPrivelage::Client);
+
+		connection->SetNetworkID(mTotalConnections);
+
+		mConnections.push_back(connection);
+	
+		//Add the streamers sockets to the select.
+		mSelect.add(*connection->GetTCPSocket());
+
+		//Finally set the streamer to initialised.
+		connection->SetInit(true);
+
+		//If we have the assets from the host.
+		if (mHasAssets)
+		{
+			connection->SendTCP(mAssets);
+		}
+
+		mClientCount++;
+		mTotalConnections++;
+	}
+
+	//Something went wrong.
+	else
+	{
+		delete connection;
+		connection = nullptr;
+		APP_WARNING("Unknown entity has joined... Resolving.");
+	}
+
+}
+
+/*
 sf::Vector2f Server::LinearPrediction(const GameData& messageA, const GameData& messageB)
 {
 	float dt = messageA.time - messageB.time;
@@ -193,38 +300,51 @@ sf::Vector2f Server::QuadraticPrediction(const GameData& messageA, const GameDat
 	return { messageA.x + vX * dtAB + 0.5f * aX * dtBC, messageA.y + vY * dtAB + 0.5f * aY * dtBC };
 }
 
-
-
-void Server::Prediction(const float currentTime, sf::RectangleShape* graphics, std::vector<GameData>& messages)
+void Server::Prediction(std::vector<sf::RectangleShape>& mGraphics, std::vector<GameData>& messages)
 {
-	if (mMessages.size() >= 3)
+	if (mGameData.size() >= (mGraphics.size() * 2))
 	{
-		int offset = 0;
-		for (int i = 0; i < 24; ++i)
+		//Sort packets into order.
+		std::sort(mGameData.begin(), mGameData.end(), GamePacketIDSort());
+
+		//For linear we need at least two packets of data to determine position.
+		//After (recieving 2 * numberOfEntities) we can begin to predict new positions.
+		int offset = mGraphics.size();
+		for (int i = 0; i < mGraphics.size(); ++i)
 		{
-			//We send 6 messages, 1 for each entity. We need atleast 2 messages for each entity to run a prediction.
-			//Hence offset the messages by 6 to obtain the second message for the 'i'th entity.
-			sf::Vector2f predictedPosition = LinearPrediction(mMessages.at(i), mMessages.at(i + offset));
+			if (!((i + offset) < mGameData.size()))
+			{
+				continue;
+			}
+			else
+			{
+				//Obtain the predicted posistion.
+				sf::Vector2f predictedPosition = LinearPrediction(mGameData.at(i), mGameData.at(i + offset));
 
-			sf::Vector2f newPosition = sf::Vector2f
-			(
-				lerp(graphics[i].getPosition().x, predictedPosition.x, 0.9f),
-				lerp(graphics[i].getPosition().y, predictedPosition.y, 0.9f)
-			);
+				sf::Vector2f newPosition = sf::Vector2f
+				(
+					//Linear interpolate between the last position and new position by 60%
+					lerp(mGraphics[i].getPosition().x, predictedPosition.x, 0.6f),
+					lerp(mGraphics[i].getPosition().y, predictedPosition.y, 0.6f)
+				);
 
-			graphics[i].setPosition(newPosition);
+				mGraphics[i].setPosition(newPosition);
+			}
 		}
-		mMessages.clear();
-		mMessages.resize(0);
-	}
-	else
-	{
-		APP_TRACE("Not enough messages to run predictions with.");
+		mGameData.clear();
+		mGameData.resize(0);
 	}
 }
+*/
 
-void Server::GenerateAssets()
+void Server::StoreClientAssetData(ConnectionData& data)
 {
+	mAssets.count = data.count;
+	mAssets.type = data.type;
+	mAssets.sizeX = data.sizeX;
+	mAssets.sizeY = data.sizeY;
+	mAssets.UdpPort = data.UdpPort;
+	mHasAssets = true;
 }
 
 void Server::Run()
@@ -233,7 +353,7 @@ void Server::Run()
 	sf::Time elapsed;
 	sf::Clock clock;
 
-	//Windows window used for rendering graphics to the screen.
+	//Windows window used for rendering mGraphics to the screen.
 	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Server");
 
 	float appElapsedTime = 0.f;
@@ -243,39 +363,18 @@ void Server::Run()
 
 	mSelect.add(mListener);
 
-	sf::RectangleShape graphics[24];
-	sf::Color colours[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::White, sf::Color::Yellow, sf::Color::Magenta };
-
-	for (int i = 0; i < 12; ++i)
-	{
-		graphics[i].setPosition(rand() % 1000 + 100, rand() % 1000 + 1000);
-		graphics[i].setFillColor(sf::Color::Cyan);
-		graphics[i].setSize(sf::Vector2f(64.0f, 64.0f));
-	}
 	// run the program as long as the window is open
 	while (window.isOpen())
 	{
+		//Calculate delta time.
+		elapsed = clock.restart();
+
 		QueryConnections();
 
 		//Process the event queue.
 		ProcessEvents(window);
 
-		//Calculate delta time.
-		elapsed = clock.restart();
-
-		if (mConnections.size() > 0)
-		{
-			RecievePacketsFromStreamer();
-
-			Prediction(elapsed.asSeconds(), graphics, mMessages);
-		}
-
 		window.clear(sf::Color(125, 125, 125, 255));
-
-		for (sf::Uint32 i = 5; i > 0; --i)
-		{
-			window.draw(graphics[i]);
-		}
 
 		window.display();
 

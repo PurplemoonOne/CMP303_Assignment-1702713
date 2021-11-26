@@ -23,23 +23,23 @@ private:
 	// @brief Checks for any new connections and accepts them.
 	void QueryConnections();
 
-	// @brief Recieves packets from the client.
-	void RecievePacketsFromStreamer();
-
-	// @brief Processes prediction of movement and hides any disparities between the client and server.
-	void Prediction(const float deltaTime, sf::RectangleShape graphics[6], std::vector<GameData>& messages);
-
 	// @brief Function to generate level assets based on the description given.
-	void GenerateAssets();
+	void StoreClientAssetData(ConnectionData& data);
 
 	// @brief Removes the connection and shuffles the array to fit the new amount of connections.
 	void RemoveConnection(sf::Uint32 element);
 
+	// @brief Gather data about the client in question. i.e Privelages...
+	void InitConnection(sf::TcpSocket* socket);
+
 private:
 
-	// @brief Prediction functions to smooth out desparities between client and server.
-	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
-	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
+	// @brief Processes prediction of movement and hides any disparities between the client and server.
+	//void Prediction(std::vector<sf::RectangleShape>& graphics, std::vector<GameData>& messages);
+
+	//// @brief Prediction functions to smooth out desparities between client and server.
+	//inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
+	//inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
 
 	// @brief A listener socket, used to listen for new connections.
 	sf::TcpListener mListener;
@@ -48,20 +48,24 @@ private:
 	sf::SocketSelector mSelect;
 
 	// @brief Array of game updates.
-	std::vector<GameData> mMessages;
+	std::vector<GameData> mGameData;
 
 	// @brief Array of connections to the server.
 	std::vector<Connection*> mConnections;
 
-	std::vector<ChatMSG> mChatLog;
-
 	// @brief A variable to track latency with respect to the last two packets recieved.
-	float latency;
+	float mLatency;
 
 	// @brief A variable to track jitter from the last N packets.
-	float jitter;
+	float mJitter;
 
-	// @brief Structure containing a description of the game assets.
-	AssetData mAssetData;
+	// @brief A bool to check whether the assets have been initialised on the server.
+	bool mHasAssets = false;
+
+	std::vector<sf::RectangleShape> mGraphics;
+	sf::Uint32 mHostCount = 0;
+	sf::Uint32 mClientCount = 0;
+	sf::Uint32 mTotalConnections = 0;
+	ConnectionData mAssets{};
 };
 

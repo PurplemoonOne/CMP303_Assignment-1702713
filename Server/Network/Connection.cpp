@@ -4,38 +4,44 @@
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	return packet << data.time << data.id << data.x << data.y;
+	return packet << data.time << data.objectID << data.x << data.y;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	return packet >> data.time >> data.id >> data.x >> data.y;
+	return packet >> data.time >> data.objectID >> data.x >> data.y;
 }
 
-sf::Packet& operator <<(sf::Packet& packet, const AssetData& data)
-{
-	return packet << data.time << data.type << data.count;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, AssetData& data)
-{
-	return packet >> data.time >> data.type >> data.count;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, ChatMSG& data)
+sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
 	return packet >> data.time >> data.message >> data.id >> data.quit;
 }
 
-sf::Packet& operator <<(sf::Packet& packet, const ChatMSG& data)
+sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 {
 	return packet << data.time << data.message << data.id << data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage;
+	return packet >> data.time >> data.privelage >> data.UdpPort >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
+
+sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
+{
+	return packet << data.time << data.privelage << data.UdpPort << data.type << data.count << data.sizeX << data.sizeY;
+}
+
+sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
+{
+	return packet >> data.udpPort >> data.ip;
+}
+
+sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
+{
+	return packet << data.udpPort << data.ip;
+}
+
 
 Connection::Connection(sf::TcpSocket* socket)
 	:
@@ -45,21 +51,9 @@ Connection::Connection(sf::TcpSocket* socket)
 	mTCPSocket = socket;
 	mIPAdress = mTCPSocket->getRemoteAddress();
 	mTCPPort = mTCPSocket->getLocalPort();
-	mUDPPort = 3333;
-
-	APP_TRACE("Connection on port {0} : IP Address {1}", mTCPPort, mIPAdress.toString());
-
-	if (mUDPSocket.bind(mUDPPort) != sf::UdpSocket::Done)
-	{
-		APP_ERROR("Could not bind socket to port ")
-	}
-	else
-	{
-		APP_TRACE("Connection on port {0} has successfully bound a UDP socket to port {1}.", mTCPPort, mUDPPort);
-	}
 }
 
-void Connection::SendTCP(ChatMSG& message)
+void Connection::SendTCP(DisconnectPCKT& message)
 {
 	sf::Packet packet;
 
@@ -69,29 +63,83 @@ void Connection::SendTCP(ChatMSG& message)
 		return;
 	}
 
-	if (!(mTCPSocket->send(packet)))
+	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
 	{
 		APP_ERROR("Failed to send message.");
 	}
 }
 
-void Connection::SendUDP(const GameData& gameData, const sf::Uint16 toPort, const sf::IpAddress& toIpAddress)
+bool Connection::SendTCP(ConnectionData& message)
 {
 	sf::Packet packet;
 
-	if (!(packet << gameData))
+	if (!(packet << message))
 	{
-		APP_ERROR("Could not pack game update into packet.");
+		APP_ERROR("Could not pack assets message.");
+		return false;
+	}
+
+	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+	{
+		APP_ERROR("TCP send failed : SendTCP() ~ ConnectionData& ");
+		return false;
+	}
+	
+	APP_TRACE("Sent asset descriptions to clients.");
+	return true;
+}
+
+void Connection::SendTCP(ClientPortAndIP& data)
+{
+	sf::Packet packet;
+
+	if (!(packet << data))
+	{
+		APP_ERROR("TCP packing failed : SendTCP() ~ ClientPortAndIP& ");
 		return;
 	}
 
-	if (mUDPSocket.send(packet, toIpAddress, toPort))
+	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
 	{
-		APP_ERROR("Could not send update to port {0} ", toPort);
+		APP_ERROR("TCP send failed : SendTCP() ~ ClientPortAndIP& ");
 	}
 }
 
-void Connection::RecieveTCP(AssetData& assetData, ChatMSG& message)
+void Connection::RecieveTCP(DisconnectPCKT& message)
+{
+	sf::Packet packet;
+
+	if (mTCPSocket->receive(packet) != sf::TcpSocket::Done)
+	{
+		APP_ERROR("TCP recieve failed : RecieveTCP() ~ DisconnectPCKT& ");
+	}
+	
+	if (!(packet >> message))
+	{
+		APP_ERROR("TCP packing failed : RecieveTCP() ~ DisconnectPCKT& ");
+	}
+
+	APP_TRACE("Connection has requested to quit.");
+}
+
+void Connection::RecieveTCP(ConnectionData& data)
+{
+	sf::Packet packet;
+
+	if (mTCPSocket->receive(packet) != sf::TcpSocket::Done)
+	{
+		APP_ERROR("TCP recieve failed : RecieveTCP() ~ ConnectionData& ");
+	}
+
+	if (!(packet >> data))
+	{
+		APP_WARNING("Unpacking connection data failed...");
+	}
+
+	APP_TRACE("Successfully recieved connection data.");
+}
+
+void Connection::RecieveTCP(ClientPortAndIP& data)
 {
 	sf::Packet packet;
 
@@ -100,32 +148,14 @@ void Connection::RecieveTCP(AssetData& assetData, ChatMSG& message)
 		APP_ERROR("Failed to recieve!");
 	}
 
-	
-	if (!(packet >> message))
+	if (!(sizeof(packet) == sizeof(ClientPortAndIP)))
 	{
-		APP_WARNING("Possibly wrong data... Trying again");
+		APP_ERROR("");
 	}
-	//else if (!(packet >> assetData))
-	//{
-	//	APP_ERROR("Failed to unpack data.");
-	//}
+
+	if (!(packet >> data))
+	{
+		APP_WARNING("Unpacking connection data failed...");
+	}
 }
 
-void Connection::RecieveUDP(GameData& gameData)
-{
-	sf::IpAddress ipAddress;
-	sf::Uint16 port;
-	sf::Packet packet;
-
-	if (mUDPSocket.receive(packet, ipAddress, port) != sf::UdpSocket::Done)
-	{
-		APP_ERROR("Could not retrieve game update.");
-	}
-	else
-	{
-		if (!(packet >> gameData))
-		{
-			APP_ERROR("Could not unpack data.");
-		}
-	}
-}

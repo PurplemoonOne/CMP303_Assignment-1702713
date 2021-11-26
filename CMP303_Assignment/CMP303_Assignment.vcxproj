@@ -144,14 +144,13 @@
   <ItemGroup>
     <ClCompile Include="Application\Animation\Animation.cpp" />
     <ClCompile Include="Application\Application.cpp" />
-    <ClCompile Include="Application\Camera\Camera.cpp" />
     <ClCompile Include="Application\Log\Log.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Application\Network\Client.cpp" />
     <ClCompile Include="Application\Scene\Scene.cpp" />
-    <ClCompile Include="Application\State\SpectateState.cpp" />
+    <ClCompile Include="Application\State\ClientState.cpp" />
     <ClCompile Include="EntryPoint.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -160,7 +159,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Application\State\GameState.cpp" />
+    <ClCompile Include="Application\State\HostState.cpp" />
     <ClCompile Include="Application\Input\InputHandler.cpp" />
     <ClCompile Include="Application\Renderer\Renderer.cpp" />
     <ClCompile Include="Application\GameObject\Entity.cpp" />
@@ -169,7 +168,6 @@
   <ItemGroup>
     <ClInclude Include="Application\Animation\Animation.h" />
     <ClInclude Include="Application\Application.h" />
-    <ClInclude Include="Application\Camera\Camera.h" />
     <ClInclude Include="Application\Components\Components.h" />
     <ClInclude Include="Application\Events\Event.h" />
     <ClInclude Include="Application\Events\Move.h" />
@@ -178,9 +176,9 @@
     <ClInclude Include="Application\Network\Client.h" />
     <ClInclude Include="Application\Network\NetworkUtilities.h" />
     <ClInclude Include="Application\pch.h" />
-    <ClInclude Include="Application\State\SpectateState.h" />
+    <ClInclude Include="Application\State\ClientState.h" />
     <ClInclude Include="Application\State\State.h" />
-    <ClInclude Include="Application\State\GameState.h" />
+    <ClInclude Include="Application\State\HostState.h" />
     <ClInclude Include="Application\Scene\Scene.h" />
     <ClInclude Include="Application\Input\Keyboard.h" />
     <ClInclude Include="Application\Input\InputHandler.h" />

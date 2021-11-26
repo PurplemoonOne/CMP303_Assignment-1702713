@@ -13,9 +13,8 @@ public:
 	virtual void OnDetach() override;
 
 private:
-
+	
 	Entity mStreamButton;
 	Entity mSpectateButton;
 	sf::Vector2f mScreenDimensions;
 };
-

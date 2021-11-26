@@ -30,7 +30,7 @@
     <ClCompile Include="Application\Scene\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\State\GameState.cpp">
+    <ClCompile Include="Application\State\HostState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Application\Input\InputHandler.cpp">
@@ -51,10 +51,7 @@
     <ClCompile Include="Application\State\MenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Camera\Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\State\SpectateState.cpp">
+    <ClCompile Include="Application\State\ClientState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,7 +68,7 @@
     <ClInclude Include="Application\State\State.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\State\GameState.h">
+    <ClInclude Include="Application\State\HostState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Application\Scene\Scene.h">
@@ -113,10 +110,7 @@
     <ClInclude Include="Application\State\MenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Camera\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Application\State\SpectateState.h">
+    <ClInclude Include="Application\State\ClientState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

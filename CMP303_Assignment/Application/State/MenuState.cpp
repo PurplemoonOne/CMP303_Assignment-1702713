@@ -16,8 +16,8 @@ MenuState::~MenuState()
 void MenuState::OnStart()
 {
 	//Load font
-	mStreamButton = Entity(mScene, "StreamButton");
-	mSpectateButton = Entity(mScene, "SpectateButton");
+	mStreamButton = Entity(mScene, "Host");
+	mSpectateButton = Entity(mScene, "Client");
 
 	mStreamButton.GetText().font.loadFromFile("Assets/font.ttf");
 	mSpectateButton.GetText().font.loadFromFile("Assets/font.ttf");
@@ -29,7 +29,7 @@ void MenuState::OnStart()
 	mStreamButton.GetText().text.setOutlineColor(sf::Color::Black);
 	mStreamButton.GetText().text.setOutlineThickness(1.2f);
 	mStreamButton.GetText().text.setLetterSpacing(1.5f);
-	mStreamButton.GetText().text.setString("Stream");
+	mStreamButton.GetText().text.setString("Host");
 
 	mSpectateButton.GetText().text.setFont(mSpectateButton.GetText().font);
 	mSpectateButton.GetText().text.setCharacterSize(14);
@@ -37,7 +37,7 @@ void MenuState::OnStart()
 	mSpectateButton.GetText().text.setOutlineColor(sf::Color::Black);
 	mSpectateButton.GetText().text.setOutlineThickness(1.2f);
 	mSpectateButton.GetText().text.setLetterSpacing(1.5f);
-	mSpectateButton.GetText().text.setString("Spectate");
+	mSpectateButton.GetText().text.setString("Client");
 
 	//Button graphics
 	mStreamButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
@@ -55,8 +55,8 @@ void MenuState::OnStart()
 
 void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
 {
-	static bool bGameState = false;
-	static bool bSpectateState = false;
+	static bool bHostState = false;
+	static bool bClientState = false;
 	float mouseX = keyboard->MouseX();
 	float mouseY = keyboard->MouseY();
 
@@ -67,42 +67,29 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	sf::Vector2f spectateButtonC00 = mSpectateButton.GetRenderer().graphics.getPosition();
 	sf::Vector2f spectateButtonC11 = mSpectateButton.GetRenderer().graphics.getPosition() + (mSpectateButton.GetRenderer().graphics.getSize());
 
+	//Check if mouse if hovering over button.
 	if ((mouseX > streamButtonC00.x && mouseX < streamButtonC11.x) && (mouseY > streamButtonC00.y && mouseY < streamButtonC11.y))
 	{
 		mStreamButton.GetRenderer().graphics.setFillColor(sf::Color::Green);
+
 		if (keyboard->MouseLeftButtonDown())
 		{
-			if (mScene->GetClient() == nullptr)
-			{
-				mScene->CreateClient(ClientPrivelage::Stream);
-			}
-			else
-			{
-				mScene->GetClient()->SetClientPrivelage(ClientPrivelage::Stream);
-			}
-
-			bGameState = true;
+			mScene->CreateClient(ClientPrivelage::Host);
+			bHostState = true;
 		}
 	}
 	else
 	{
 		mStreamButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
 	}
+
 	if ((mouseX > spectateButtonC00.x && mouseX < spectateButtonC11.x) && (mouseY > spectateButtonC00.y && mouseY < spectateButtonC11.y))
 	{
 		mSpectateButton.GetRenderer().graphics.setFillColor(sf::Color::Green);
 		if (keyboard->MouseLeftButtonDown())
 		{
-			if (mScene->GetClient() == nullptr)
-			{
-				mScene->CreateClient(ClientPrivelage::Spectate);
-			}
-			else
-			{
-				mScene->GetClient()->SetClientPrivelage(ClientPrivelage::Spectate);
-			}
-
-			bSpectateState = true;
+			mScene->CreateClient(ClientPrivelage::Client);
+			bClientState = true;
 		}
 	}
 	else
@@ -110,17 +97,17 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 		mSpectateButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
 	}
 
-	if (bGameState)
-	{
-		bGameState = false;
-		mScene->TransitionState("game");
-	}
-	else if (bSpectateState)
-	{
-		bSpectateState = false;
-		mScene->TransitionState("spectate");
-	}
 
+	if (bHostState)
+	{
+		bHostState = false;
+		mScene->TransitionState("host");
+	}
+	else if (bClientState)
+	{
+		bClientState = false;
+		mScene->TransitionState("client");
+	}
 }
 
 void MenuState::OnDetach()

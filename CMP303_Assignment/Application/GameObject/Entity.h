@@ -9,7 +9,7 @@ class Entity
 public:
 	Entity() = default;
 	Entity(const Entity&) = default;
-	Entity(Scene* scene, const std::string& = "Entity");
+	Entity(Scene* scene, const std::string& = "Entity", size_t index = -1);
 
 	TransformComponent& GetTransform();
 	TransformComponent& GetTransform(const std::string& tag);
