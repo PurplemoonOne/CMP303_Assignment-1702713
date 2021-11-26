@@ -98,6 +98,26 @@ void Server::QueryConnections()
 
 		}
 
+		ClientPortAndIP cPortIP;
+		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+		{
+			if (!(mConnections.at(i) == nullptr))
+			{
+				for (sf::Uint32 j = 0; j < mConnections.size(); ++j)
+				{
+					if (!(mConnections.at(j) == nullptr) && 
+						//If we are this connection don't send ourselves our UDP port.
+						(mConnections.at(i)->GetTCPPort() != mConnections.at(j)->GetTCPPort()))
+					{
+						cPortIP.udpPort = mConnections.at(j)->GetUDPPort();
+						cPortIP.ip = mConnections.at(j)->GetIPAddress().toString();
+						mConnections.at(i)->SendTCP(cPortIP);
+					}
+				}
+
+			}
+		}
+
 		if (mHasAssets)
 		{
 			//Check if the client needs assets.
@@ -105,15 +125,12 @@ void Server::QueryConnections()
 			{
 				if (mConnections.at(i) != nullptr)
 				{
-					if (mConnections.at(i)->GetConnectionPrivelage() != ClientPrivelage::Host)
-					{
-						//If the client is still waiting for assets send them now.
-						if (!mConnections.at(i)->HasAssets())
+					//If the client is still waiting for assets send them now.
+					if (!mConnections.at(i)->HasAssets())
+					{	
+						if (mConnections.at(i)->SendTCP(mAssets))
 						{
-							if (mConnections.at(i)->SendTCP(mAssets))
-							{
-								mConnections.at(i)->SetHasAssets(true);
-							}
+							mConnections.at(i)->SetHasAssets(true);
 						}
 					}
 				}
@@ -184,13 +201,15 @@ void Server::InitConnection(sf::TcpSocket* socket)
 	if (connectionData.privelage == 0)
 	{
 		//If the number of host's is not greater than 1.
-		if (!((mHostCount + 1) > 1))
+		if (mHostCount < 1)
 		{
 			APP_TRACE("A new host has joined!");
 
 			connection->SetPrivelage(ClientPrivelage::Host);
 
 			mHostCount++;
+
+			connection->SetUDPPort(connectionData.udpPort);
 
 			//Streamer gets special ID.
 			connection->SetNetworkID(0);
@@ -241,6 +260,8 @@ void Server::InitConnection(sf::TcpSocket* socket)
 
 		connection->SetPrivelage(ClientPrivelage::Client);
 
+		connection->SetUDPPort(connectionData.udpPort);
+
 		connection->SetNetworkID(mTotalConnections);
 
 		mConnections.push_back(connection);
@@ -252,6 +273,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 		connection->SetInit(true);
 
 		connection->SetHasAssets(false);
+
 
 		mClientCount++;
 		mTotalConnections++;

@@ -95,8 +95,8 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 		mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
 
 		//Check for new ports.
-		//if(mClient)
-		//	mClient->GatherNewPorts(); 
+		if(mClient)
+			mClient->GatherNewPorts(); 
 
 		//Send data to the server.
 		//Host code.

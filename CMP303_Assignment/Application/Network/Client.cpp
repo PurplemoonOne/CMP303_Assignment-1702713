@@ -49,12 +49,12 @@ sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 
 sf::Packet& operator >>(sf::Packet& packet, ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.udpPort >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.time >> data.privelage >> data.udpPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.udpPort << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.time << data.privelage << data.udpPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
@@ -127,6 +127,7 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 	}
 	else
 	{
+		//Only one position to send.
 		data.InitArray(1);
 	}
 
@@ -138,15 +139,13 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 		data.objectIDs[i] = i;
 	}
 
-
 	time_t t = time(0);
 	data.time = (double)t;
-
 	sf::Packet packet;
+
 	if (!(packet << data))
 	{
 		APP_ERROR("Error! Could not append data to packet!");
-		return;
 	}
 	else
 	{
@@ -160,12 +159,6 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 					APP_ERROR("Could not send packet to peer on port {0} !", peer.first);
 				}
 			}
-		}
-
-		//TO DO : Remove me.
-		if (mUDPSocket.send(packet, mIPAdress, 3333) != sf::UdpSocket::Done)
-		{
-			APP_ERROR("Could not send packet to the server on port {0} !", 3333);
 		}
 	}
 }
@@ -183,37 +176,51 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.type = assetType;
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.y;
+		data.udpPort = mUDPPort;
+		data.ipAddress = mIPAdress.toInteger();
 
 		if (!(packet << data))
 		{
 			APP_ERROR("Host : Failed to pack connection data.");
 		}
-
-		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+		else
 		{
-			APP_ERROR("Unable to send TCP connection data.");
+			if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+			{
+				APP_ERROR("Unable to send TCP connection data.");
+			}
+			else
+			{
+				APP_TRACE("Client : Sending connection data successful");
+			}
 		}
 	}
 	else
 	{
-
 		data.privelage = 1;
 		data.count = 0;
 		data.type = 0;
 		data.sizeX = 0;
 		data.sizeY = 0;
+		data.udpPort = mUDPPort;
+		data.ipAddress = mIPAdress.toInteger();
 
 		if (!(packet << data))
 		{
 			APP_ERROR("Peer : Failed to pack connection data.");
 		}
-
-		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+		else
 		{
-			APP_ERROR("Unable to send TCP connection data.");
+			if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+			{
+				APP_ERROR("Unable to send TCP connection data.");
+			}
+			else
+			{
+				APP_TRACE("Client : Sending connection data successful");
+			}
 		}
 	}
-
 }
 
 ConnectionData& Client::RecieveHostAssets()
@@ -279,21 +286,23 @@ void Client::GatherNewPorts()
 	{
 		APP_ERROR("Failed to obtain new ports.");
 	}
-
-	if (!(packet >> data))
-	{
-		APP_ERROR("Failed to pack data : Client GatherNewPorts() ");
-	}
 	else
 	{
-		sf::IpAddress ipAddress = sf::IpAddress(data.ip);
-
-		for (auto& peers : mPeers)
+		if (!(packet >> data))
 		{
-			if (!(peers.first == data.udpPort && peers.second == ipAddress))
+			APP_ERROR("Failed to pack data : Client GatherNewPorts() ");
+		}
+		else
+		{
+			sf::IpAddress ipAddress = sf::IpAddress(data.ip);
+
+			for (auto& peers : mPeers)
 			{
-				APP_TRACE("New peer joined on port {0} ip address {1}.", data.udpPort, ipAddress.toString());
-				mPeers.push_back({ data.udpPort, ipAddress });
+				if (!(peers.first == data.udpPort && peers.second == ipAddress))
+				{
+					APP_TRACE("New peer joined on port {0} ip address {1}.", data.udpPort, ipAddress.toString());
+					mPeers.push_back({ data.udpPort, ipAddress });
+				}
 			}
 		}
 	}
@@ -303,6 +312,7 @@ bool Client::Disconnect()
 {
 	DisconnectPCKT data;
 	sf::Packet packet;
+	bool returnStatus = false;
 
 	data.id = 0;
 	data.quit = 1;
@@ -311,19 +321,20 @@ bool Client::Disconnect()
 	if (!(packet << data))
 	{
 		APP_ERROR("Failed to pack data...");
-		return false;
 	}
-
-	if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+	else
 	{
-		APP_ERROR("Could not disconnect from server... Try again.");
-		return false;
+		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("Could not disconnect from server gracefully......");
+		}
+		else
+		{
+			mTCPSocket.disconnect();
+			returnStatus = true;
+		}
 	}
-
-
-	mTCPSocket.disconnect();
-
-	return true;
+	return returnStatus;
 }
 
 

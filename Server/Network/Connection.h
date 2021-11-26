@@ -11,6 +11,9 @@ public:
 
 	const sf::Uint16 GetTCPPort() const { return mTCPPort; }
 
+	void SetUDPPort(sf::Uint16 port) { mUDPPort = port; }
+	const sf::Uint16 GetUDPPort() const { return mUDPPort; }
+
 	const sf::Uint16 GetNetworkID() const { return mNetworkID; }
 	void SetNetworkID(sf::Uint16 id) { mNetworkID = id; }
 
@@ -51,6 +54,7 @@ private:
 
 	// @brief This connection's port number.
 	sf::Uint16 mTCPPort = 0000;
+	sf::Uint16 mUDPPort = 0;
 
 	// @brief A flag to check whether this connection had been initialised.
 	bool mHasBeenInitialised = false;

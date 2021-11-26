@@ -49,7 +49,7 @@ struct ConnectionData : public BaseData
 {
 	sf::Uint8 privelage;
 	sf::Uint16 udpPort;
-	sf::String ipAddress;
+	sf::Uint32 ipAddress;
 	AssetType type;
 	AssetCount count = 0;
 	float sizeX;

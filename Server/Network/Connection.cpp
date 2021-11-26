@@ -85,31 +85,42 @@ void Connection::SendTCP(DisconnectPCKT& message)
 		APP_ERROR("Could not pack message.");
 		return;
 	}
-
-	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+	else
 	{
-		APP_ERROR("Failed to send message.");
+		if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("Failed to send message.");
+		}
+		else
+		{
+			APP_TRACE("Successfully send disconnect message.");
+		}
 	}
 }
 
 bool Connection::SendTCP(ConnectionData& message)
 {
 	sf::Packet packet;
+	bool status = false;
 
 	if (!(packet << message))
 	{
 		APP_ERROR("Could not pack assets message.");
-		return false;
+	}
+	else
+	{
+		if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("TCP send failed : SendTCP() ~ ConnectionData& ");
+		}
+		else
+		{
+			APP_TRACE("Successfully send peers asset description.");
+			status = true;
+		}
 	}
 
-	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
-	{
-		APP_ERROR("TCP send failed : SendTCP() ~ ConnectionData& ");
-		return false;
-	}
-	
-	APP_TRACE("Sent asset descriptions to clients.");
-	return true;
+	return status;
 }
 
 void Connection::SendTCP(ClientPortAndIP& data)
@@ -121,10 +132,16 @@ void Connection::SendTCP(ClientPortAndIP& data)
 		APP_ERROR("TCP packing failed : SendTCP() ~ ClientPortAndIP& ");
 		return;
 	}
-
-	if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+	else
 	{
-		APP_ERROR("TCP send failed : SendTCP() ~ ClientPortAndIP& ");
+		if (mTCPSocket->send(packet) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("TCP send failed : SendTCP() ~ ClientPortAndIP& ");
+		}
+		else
+		{
+			APP_TRACE("Successfully sent the peers port number and IP address.");
+		}
 	}
 }
 
@@ -153,13 +170,17 @@ void Connection::RecieveTCP(ConnectionData& data)
 	{
 		APP_ERROR("TCP recieve failed : RecieveTCP() ~ ConnectionData& ");
 	}
-
-	if (!(packet >> data))
+	else
 	{
-		APP_WARNING("Unpacking connection data failed...");
+		if (!(packet >> data))
+		{
+			APP_ERROR("Unpacking connection data failed...");
+		}
+		else
+		{
+			APP_TRACE("Successfully recieved connection data.");
+		}
 	}
-
-	APP_TRACE("Successfully recieved connection data.");
 }
 
 void Connection::RecieveTCP(ClientPortAndIP& data)
@@ -170,15 +191,16 @@ void Connection::RecieveTCP(ClientPortAndIP& data)
 	{
 		APP_ERROR("Failed to recieve!");
 	}
-
-	if (!(sizeof(packet) == sizeof(ClientPortAndIP)))
+	else
 	{
-		APP_ERROR("");
-	}
-
-	if (!(packet >> data))
-	{
-		APP_WARNING("Unpacking connection data failed...");
+		if (!(packet >> data))
+		{
+			APP_WARNING("Unpacking connection data failed...");
+		}
+		else
+		{
+			APP_TRACE("Successfully recieved a TCP packet from the server.")
+		}
 	}
 }
 

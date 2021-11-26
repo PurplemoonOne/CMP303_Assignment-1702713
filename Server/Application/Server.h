@@ -34,13 +34,6 @@ private:
 
 private:
 
-	// @brief Processes prediction of movement and hides any disparities between the client and server.
-	//void Prediction(std::vector<sf::RectangleShape>& graphics, std::vector<GameData>& messages);
-
-	//// @brief Prediction functions to smooth out desparities between client and server.
-	//inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
-	//inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
-
 	// @brief A listener socket, used to listen for new connections.
 	sf::TcpListener mListener;
 
@@ -52,6 +45,7 @@ private:
 
 	// @brief Array of connections to the server.
 	std::vector<Connection*> mConnections;
+
 
 	// @brief A variable to track latency with respect to the last two packets recieved.
 	float mLatency;
