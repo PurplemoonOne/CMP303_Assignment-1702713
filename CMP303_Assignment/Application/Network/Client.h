@@ -10,7 +10,9 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(std::pair<float, float> position, sf::Uint32 id);
+	void SendGamePacket(sf::Vector2f* positions);
+
+	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
 	// @brief Recieve a TCP packet from the server.
 	ConnectionData& RecieveHostAssets();
@@ -22,7 +24,7 @@ public:
 	void GatherNewPorts();
 
 	// @brief Establish a connection with the server.
-	void ConnectToServer(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
+	void ConnectToServer();
 
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
 	bool Disconnect();

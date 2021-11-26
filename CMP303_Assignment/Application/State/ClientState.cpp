@@ -17,11 +17,12 @@ void ClientState::OnStart()
 {
 	//Reserve space.
 	mScene->GetRegistery()->ReserveBuffer(260);
+
 	//Connect to the server.
 	mScene->GetClient()->ConnectToServer();
 
-	if (!mHasAssets)
-		GenerateHostAssets();
+	//Send client data to server.
+	mScene->GetClient()->SendConnectionInformation();
 
 	//Create shark.
 	mShark = Entity(mScene, "shark", 129);
@@ -34,6 +35,9 @@ void ClientState::OnStart()
 
 void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
 {
+	if (!mHasAssets)
+		GenerateHostAssets();
+
 	//Execute the queued event.
 	Event* event = inputHandler.HandleKeyboard(keyboard);
 
@@ -50,9 +54,16 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 	if (QueryButton(keyboard))
 	{
 		APP_TRACE("Disconnecting from server....");
-		mScene->GetClient()->Disconnect();
-		delete mScene->GetClient();
-		mScene->TransitionState("menu");
+		if (mScene->GetClient()->Disconnect())
+		{
+			delete mScene->GetClient();
+			mScene->TransitionState("menu");
+		}
+		else
+		{
+			APP_ERROR("Could not disconnect from the server gracefully.... Terminating program.");
+			exit(1);
+		}
 	}
 }
 
@@ -68,6 +79,8 @@ void ClientState::GenerateHostAssets()
 
 	if (assets.count < 256)
 	{
+		APP_TRACE("Successfully recieved valid asset descriptions!");
+
 		//Create replicate assets of the host.
 		for (sf::Uint32 i = 0; i < assets.count; ++i)
 		{

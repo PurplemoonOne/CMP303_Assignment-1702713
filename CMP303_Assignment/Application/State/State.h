@@ -17,7 +17,14 @@ public:
 		this->mScene = lscene;
 	}
 
+	void SetShouldUpdate(bool value)
+	{
+		mUpdate = value;
+	}
+
+	const bool Update() const { return mUpdate; }
 
 protected:
 	Scene* mScene;
+	bool mUpdate = true;
 };

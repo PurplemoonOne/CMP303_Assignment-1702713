@@ -195,6 +195,12 @@ struct Registery
 
 	void ClearRegistery()
 	{
+
+		for (auto& tag : tags)
+		{
+			idMap.erase(tag.tag);
+		}
+
 		tags.clear();
 		tags.resize(0);
 		transforms.clear();
@@ -206,7 +212,7 @@ struct Registery
 		texts.clear();
 		texts.resize(0);
 		animations.clear();
-		animations.resize(0);
+		animations.resize(0);	
 	}
 
 	// @brief Insert a new entity into memory.

@@ -15,6 +15,7 @@ Server::Server()
 	//Initialise log system.
 	ServerLog::Init();
 
+	//Reserve '1' slot for the host at element '0'.
 	mConnections.resize(1);
 }
 
@@ -22,16 +23,6 @@ Server::~Server()
 {
 	mListener.close();
 }
-
-//Custom sort functor for sorting packets into ID order.
-class GamePacketIDSort
-{
-public:
-	inline bool operator()(const GameData& p1, const GameData& p2)
-	{
-		return (p1.objectID < p2.objectID);
-	}
-};
 
 void Server::ProcessEvents(sf::RenderWindow& window)
 {
@@ -85,18 +76,37 @@ void Server::QueryConnections()
 			InitConnection(clientSocket);
 		}
 
-		//If we have other connections deal with them too.
-		if (mConnections.size() > 0)
+	
+		//Read newly messages and or requests to leave the stream.
+		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 		{
-			//Read newly messages and or requests to leave the stream.
+			//Element 0 is reserved for host. Hence element 0 is NULL if no host.
+			if (mConnections.at(i) != nullptr)
+			{
+				if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+				{
+					DisconnectPCKT chatData;
+					mConnections.at(i)->RecieveTCP(chatData);
+
+					if (chatData.quit == 1)
+					{
+						RemoveConnection(i);
+						continue;//Move onto the next connection.
+					}
+				}
+			}
+
+		}
+
+		if (mHasAssets)
+		{
+			//Check if the client needs assets.
 			for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 			{
-				//Element 0 is reserved for host. Hence element 0 is NULL if no host.
 				if (mConnections.at(i) != nullptr)
 				{
-					if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+					if (mConnections.at(i)->GetConnectionPrivelage() != ClientPrivelage::Host)
 					{
-
 						//If the client is still waiting for assets send them now.
 						if (!mConnections.at(i)->HasAssets())
 						{
@@ -104,14 +114,6 @@ void Server::QueryConnections()
 							{
 								mConnections.at(i)->SetHasAssets(true);
 							}
-						}
-
-						DisconnectPCKT chatData;
-						mConnections.at(i)->RecieveTCP(chatData);
-
-						if (chatData.quit == 1)
-						{
-							RemoveConnection(i);
 						}
 					}
 				}
@@ -123,8 +125,7 @@ void Server::QueryConnections()
 
 void Server::RemoveConnection(sf::Uint32 element)
 {
-
-	APP_TRACE("Connection with client on port {0} has been closed.", mConnections.at(element)->GetTCPPort());
+	sf::Uint16 port = mConnections.at(element)->GetTCPPort();
 
 	if (mConnections.at(element)->GetConnectionPrivelage() == ClientPrivelage::Host)
 	{
@@ -167,11 +168,7 @@ void Server::RemoveConnection(sf::Uint32 element)
 	//Resize the array to the new number of connections.
 	mConnections.resize(mTotalConnections + 1);
 
-	//Re-add the sockets that are still connected.
-	for (sf::Uint32 i = 1; i < mConnections.size(); ++i)
-	{
-		mSelect.add(*mConnections.at(i)->GetTCPSocket());
-	}
+	APP_TRACE("Connection on port {0} has been closed.", port);
 }
 
 void Server::InitConnection(sf::TcpSocket* socket)
@@ -229,6 +226,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			connectionData.id = 0;
 			connectionData.time = time(0);
 			connection->SendTCP(connectionData);
+			connection->GetTCPSocket()->disconnect();
 			delete connection;
 			connection = nullptr;
 			return;
@@ -253,11 +251,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 		//Finally set the streamer to initialised.
 		connection->SetInit(true);
 
-		//If we have the assets from the host.
-		if (mHasAssets)
-		{
-			connection->SendTCP(mAssets);
-		}
+		connection->SetHasAssets(false);
 
 		mClientCount++;
 		mTotalConnections++;
@@ -343,7 +337,8 @@ void Server::StoreClientAssetData(ConnectionData& data)
 	mAssets.type = data.type;
 	mAssets.sizeX = data.sizeX;
 	mAssets.sizeY = data.sizeY;
-	mAssets.UdpPort = data.UdpPort;
+	mAssets.ipAddress = data.ipAddress;
+	mAssets.udpPort = data.udpPort;
 	mHasAssets = true;
 }
 

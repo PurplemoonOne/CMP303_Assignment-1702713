@@ -23,7 +23,9 @@ void HostState::OnStart()
 
 	sf::Vector2f size = mFlock.mBoids.back().mEntity.GetRenderer().graphics.getSize();
 
-	mScene->GetClient()->ConnectToServer(1, mBoidCount, size);
+	mScene->GetClient()->ConnectToServer();
+
+	mScene->GetClient()->SendConnectionInformation(1, mBoidCount, size);
 }
 
 void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)

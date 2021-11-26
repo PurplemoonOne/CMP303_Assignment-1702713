@@ -19,11 +19,21 @@ struct BaseData
 	double time;
 };
 
+// @brief Packet containing positional data of the objects.
 struct GameData : public BaseData
 {
-	sf::Int32 objectID = -1;
-	float x;
-	float y;
+	inline void InitArray(sf::Uint32 arraySize)
+	{
+		x = new float[arraySize];
+		y = new float[arraySize];
+		objectIDs = new sf::Int32[arraySize];
+	}
+
+	sf::Int32* objectIDs; 
+	sf::Uint16 state;
+	float* x;
+	float* y;
+	
 };
 
 // @brief Special packet structure for the server to send the client confirming a packet was recieved.
@@ -38,7 +48,8 @@ typedef unsigned short int AssetCount;
 struct ConnectionData : public BaseData
 {
 	sf::Uint8 privelage;
-	sf::Uint16 UdpPort;
+	sf::Uint16 udpPort;
+	sf::String ipAddress;
 	AssetType type;
 	AssetCount count = 0;
 	float sizeX;

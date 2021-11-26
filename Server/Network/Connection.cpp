@@ -2,14 +2,37 @@
 #include <memory>
 #include "../Log/ServerLog.h"
 
-sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
-{
-	return packet << data.time << data.objectID << data.x << data.y;
-}
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	return packet >> data.time >> data.objectID >> data.x >> data.y;
+	packet >> data.time;
+
+	if (((data.x != nullptr) && (data.y != nullptr)))
+	{
+		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.objectIDs[i] >> data.x[i] >> data.y[i];
+		}
+	}
+
+	return packet;
+}
+
+sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
+{
+	packet << data.time;
+
+	if (((data.x != nullptr) && (data.y != nullptr)))
+	{
+		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
+		for (int i = 0; i < count; ++i)
+		{
+			packet << data.objectIDs[i] << data.x[i] << data.y[i];
+		}
+	}
+
+	return packet;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
@@ -24,12 +47,12 @@ sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 
 sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.UdpPort >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.time >> data.privelage >> data.udpPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.UdpPort << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.time << data.privelage << data.udpPort  << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
