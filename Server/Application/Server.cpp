@@ -15,8 +15,6 @@ Server::Server()
 	//Initialise log system.
 	ServerLog::Init();
 
-	//Reserve '1' slot for the host at element '0'.
-	mConnections.resize(1);
 }
 
 Server::~Server()
@@ -75,8 +73,10 @@ void Server::QueryConnections()
 			//Initialise the connection.
 			InitConnection(clientSocket);
 		}
+	}	
 
-	
+	if (mSelect.wait(sf::milliseconds(16.0f)))
+	{
 		//Read newly messages and or requests to leave the stream.
 		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 		{
@@ -95,48 +95,44 @@ void Server::QueryConnections()
 					}
 				}
 			}
-
 		}
+	}
 
-		ClientPortAndIP cPortIP;
+	ClientPortAndIP cPortIP;
+	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+	{
+		if (!(mConnections.at(i) == nullptr))
+		{
+			for (sf::Uint32 j = 0; j < mConnections.size(); ++j)
+			{
+				if (!(mConnections.at(j) == nullptr) && (mConnections.at(i)->GetUDPPort() != mConnections.at(j)->GetUDPPort()))
+				{
+					APP_TRACE("Sending connections peer UDPs");
+					cPortIP.udpPort = mConnections.at(j)->GetUDPPort();
+					mConnections.at(i)->SendTCP(cPortIP);
+				}
+			}
+		}
+	}
+
+	if (mHasAssets)
+	{
+		//Check if the client needs assets.
 		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 		{
-			if (!(mConnections.at(i) == nullptr))
+			if (mConnections.at(i) != nullptr)
 			{
-				for (sf::Uint32 j = 0; j < mConnections.size(); ++j)
+				//If the client is still waiting for assets send them now.
+				if (!mConnections.at(i)->HasAssets())
 				{
-					if (!(mConnections.at(j) == nullptr) && 
-						//If we are this connection don't send ourselves our UDP port.
-						(mConnections.at(i)->GetTCPPort() != mConnections.at(j)->GetTCPPort()))
+					if (mConnections.at(i)->SendTCP(mAssets))
 					{
-						cPortIP.udpPort = mConnections.at(j)->GetUDPPort();
-						cPortIP.ip = mConnections.at(j)->GetIPAddress().toString();
-						mConnections.at(i)->SendTCP(cPortIP);
-					}
-				}
-
-			}
-		}
-
-		if (mHasAssets)
-		{
-			//Check if the client needs assets.
-			for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
-			{
-				if (mConnections.at(i) != nullptr)
-				{
-					//If the client is still waiting for assets send them now.
-					if (!mConnections.at(i)->HasAssets())
-					{	
-						if (mConnections.at(i)->SendTCP(mAssets))
-						{
-							mConnections.at(i)->SetHasAssets(true);
-						}
+						mConnections.at(i)->SetHasAssets(true);
 					}
 				}
 			}
 		}
-	}	
+	}
 }
 
 
@@ -218,7 +214,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			mSelect.add(*connection->GetTCPSocket());
 
 			//insert the streamer at the front of the array.
-			mConnections.insert(mConnections.begin(), connection);
+			mConnections.push_back(connection);
 
 			//Finally set the streamer to initialised.
 			connection->SetInit(true);

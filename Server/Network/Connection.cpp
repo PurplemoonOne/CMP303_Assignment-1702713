@@ -57,12 +57,12 @@ sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
 {
-	return packet >> data.udpPort >> data.ip;
+	return packet >> data.udpPort;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
 {
-	return packet << data.udpPort << data.ip;
+	return packet << data.udpPort;
 }
 
 

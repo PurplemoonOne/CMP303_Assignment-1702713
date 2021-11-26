@@ -31,6 +31,8 @@ private:
 
 	float mNetworkTickRate;
 
+	void HostNetworking();
+	void ClientNetworking();
 
 	// @brief Prediction functions to smooth out desparities between client and server.
 	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);

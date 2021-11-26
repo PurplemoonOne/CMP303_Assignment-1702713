@@ -10,7 +10,7 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(sf::Vector2f* positions);
+	void SendGamePacket(std::vector<sf::Vector2f> positions);
 
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
@@ -60,7 +60,7 @@ private:
 	ClientPrivelage mPrivelage;
 
 	// @brief An array of all the ports and Ip address to send game updates to.
-	std::vector<std::pair<sf::Uint16, sf::IpAddress>> mPeers;
+	std::vector<sf::Uint16> mPeers;
 
 	// @brief An array holding game updates.
 	std::vector<GameData> mGameData;

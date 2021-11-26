@@ -17,32 +17,47 @@ sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	packet >> data.time;
+	packet >> data.time >> data.arraySize;
 
-	if (((data.x != nullptr) && (data.y != nullptr)))
+	sf::Uint32 count = data.arraySize;
+	data.InitArray(count);
+
+	for (int i = 0; i < count; ++i)
 	{
-		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
-		for (int i = 0; i < count; ++i)
-		{
-			packet >> data.objectIDs[i] >> data.x[i] >> data.y[i];
-		}
+		packet >> data.objectIDs[i];
 	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet >> data.x[i];
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet >> data.y[i];
+	}
+	
 
 	return packet;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	packet << data.time;
+	packet << data.time << data.arraySize;
 
-	if (((data.x != nullptr) && (data.y != nullptr)))
+	sf::Uint32 count = data.arraySize;
+
+	for (int i = 0; i < count; ++i)
 	{
-		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
-		for (int i = 0; i < count; ++i)
-		{
-			packet << data.objectIDs[i] << data.x[i] << data.y[i];
-		}
+		packet << data.objectIDs[i];
 	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet << data.x[i];
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet << data.y[i];
+	}
+
 
 	return packet;
 }
@@ -59,12 +74,12 @@ sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 
 sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
 {
-	return packet << data.udpPort << data.ip;
+	return packet << data.udpPort;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
 {
-	return packet >> data.udpPort >> data.ip;
+	return packet >> data.udpPort;
 }
 
 
@@ -79,20 +94,20 @@ Client::Client()
 	mUDPPort = 4444;
 
 	//Bind the UDP socket to an available port.
-	if (mUDPSocket.bind(mUDPPort) != sf::UdpSocket::Done)
+	if (mUDPSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
 	{
-		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPPort);		
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPSocket.getLocalPort());
 		//Try again using any port which is available, SFML will find an unused port.	
-		if (mUDPSocket.bind((mUDPPort = sf::UdpSocket::AnyPort)) != sf::UdpSocket::Done)
+		if (mUDPSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
 		{
 			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
 		}
 
-		APP_TRACE("Bound UDP socket to port {0}", mUDPPort);
+		APP_TRACE("Bound UDP socket to port {0}", mUDPSocket.getLocalPort());
 	}
 	else
 	{
-		APP_TRACE("Bound UDP socket to port {0}", mUDPPort);
+		APP_TRACE("Bound UDP socket to port {0}", mUDPSocket.getLocalPort());
 	}
 }
 
@@ -117,13 +132,13 @@ void Client::ConnectToServer()
 	mUDPSocket.setBlocking(false);
 }
 
-void Client::SendGamePacket(sf::Vector2f* positions)
+void Client::SendGamePacket(std::vector<sf::Vector2f> positions)
 {
 	GameData data;
 	//Initialise the buffer.
 	if (mPrivelage == ClientPrivelage::Host)
 	{
-		data.InitArray(sf::Uint32(sizeof(positions) * 0.5f));
+		data.InitArray(positions.size());
 	}
 	else
 	{
@@ -131,8 +146,7 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 		data.InitArray(1);
 	}
 
-	sf::Uint32 count = sf::Uint32((sizeof(positions) * 0.5f) / sizeof(float));
-	for (int i = 0; i < count; ++i)
+	for (int i = 0; i < positions.size(); ++i)
 	{
 		data.x[i] = positions[i].x;
 		data.y[i] = positions[i].y;
@@ -145,7 +159,7 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 
 	if (!(packet << data))
 	{
-		APP_ERROR("Error! Could not append data to packet!");
+		APP_ERROR("Could not pack game data!");
 	}
 	else
 	{
@@ -154,9 +168,9 @@ void Client::SendGamePacket(sf::Vector2f* positions)
 		{
 			for (auto& peer : mPeers)
 			{
-				if (mUDPSocket.send(packet, peer.second, peer.first) != sf::UdpSocket::Done)
+				if (mUDPSocket.send(packet, sf::IpAddress::getLocalAddress(), peer) != sf::UdpSocket::Done)
 				{
-					APP_ERROR("Could not send packet to peer on port {0} !", peer.first);
+					APP_ERROR("Could not send packet to peer on port {0} !", peer);
 				}
 			}
 		}
@@ -176,7 +190,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.type = assetType;
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.y;
-		data.udpPort = mUDPPort;
+		data.udpPort = mUDPSocket.getLocalPort();
 		data.ipAddress = mIPAdress.toInteger();
 
 		if (!(packet << data))
@@ -202,7 +216,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.type = 0;
 		data.sizeX = 0;
 		data.sizeY = 0;
-		data.udpPort = mUDPPort;
+		data.udpPort = mUDPSocket.getLocalPort();
 		data.ipAddress = mIPAdress.toInteger();
 
 		if (!(packet << data))
@@ -244,7 +258,7 @@ ConnectionData& Client::RecieveHostAssets()
 	else
 	{
 		sf::IpAddress ipAddress = sf::IpAddress(connData.ipAddress);
-		mPeers.push_back({connData.udpPort, ipAddress});
+		mPeers.push_back(connData.udpPort);
 		return connData;
 	}
 }
@@ -264,7 +278,7 @@ void Client::RecievePacket()
 
 		if (!(packet >> data))
 		{
-			//APP_ERROR("Could not unpack game update from server!");
+			APP_ERROR("Could not unpack game data!");
 		}
 		else
 		{
@@ -294,14 +308,20 @@ void Client::GatherNewPorts()
 		}
 		else
 		{
-			sf::IpAddress ipAddress = sf::IpAddress(data.ip);
-
-			for (auto& peers : mPeers)
+			if (mPeers.size() == 0)
 			{
-				if (!(peers.first == data.udpPort && peers.second == ipAddress))
+				APP_TRACE("New peer joined on port {0} .", data.udpPort);
+				mPeers.push_back(data.udpPort);
+			}
+			else if(mPeers.size() != 0)
+			{
+				for (auto& peers : mPeers)
 				{
-					APP_TRACE("New peer joined on port {0} ip address {1}.", data.udpPort, ipAddress.toString());
-					mPeers.push_back({ data.udpPort, ipAddress });
+					if ((peers != data.udpPort))
+					{
+						APP_TRACE("New peer joined on port {0} .", data.udpPort);
+						mPeers.push_back(data.udpPort);
+					}
 				}
 			}
 		}

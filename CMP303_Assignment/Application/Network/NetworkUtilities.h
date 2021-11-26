@@ -22,15 +22,16 @@ struct BaseData
 // @brief Packet containing positional data of the objects.
 struct GameData : public BaseData
 {
-	inline void InitArray(sf::Uint32 arraySize)
+	inline void InitArray(sf::Uint32 arSize)
 	{
-		x = new float[arraySize];
-		y = new float[arraySize];
-		objectIDs = new sf::Int32[arraySize];
+		x = new float[arSize];
+		y = new float[arSize];
+		objectIDs = new sf::Uint32[arSize];
+		arraySize = arSize;
 	}
 
-	sf::Int32* objectIDs; 
-	sf::Uint16 state;
+	sf::Uint32 arraySize;
+	sf::Uint32* objectIDs; 
 	float* x;
 	float* y;
 	
@@ -59,7 +60,6 @@ struct ConnectionData : public BaseData
 struct ClientPortAndIP
 {
 	sf::Uint16 udpPort;
-	sf::String ip;
 };
 
 struct DisconnectPCKT : public BaseData
