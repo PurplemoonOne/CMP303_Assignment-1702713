@@ -2,7 +2,7 @@
 
 //Const data
 const sf::IpAddress SERVER_PUBLIC_IP = sf::IpAddress::getPublicAddress();
-const sf::IpAddress SERVER_LOCAL_IP = sf::IpAddress::getLocalAddress();
+const sf::IpAddress MACHINE_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
 
 
@@ -17,7 +17,7 @@ sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	packet >> data.time >> data.arraySize;
+	packet >> data.time >> data.peerUdpRecvPort >> data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
 	data.InitArray(count);
@@ -41,7 +41,7 @@ sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	packet << data.time << data.arraySize;
+	packet << data.time << data.peerUdpRecvPort << data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
 
@@ -64,12 +64,12 @@ sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 
 sf::Packet& operator >>(sf::Packet& packet, ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.udpPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.time >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.udpPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.time << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
@@ -91,29 +91,55 @@ Client::Client()
 {
 	// Fetch the machines IP Address. 
 	mIPAdress = sf::IpAddress::getLocalAddress();
-	mUDPPort = 4444;
-
-	//Bind the UDP socket to an available port.
-	if (mUDPSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
-	{
-		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPSocket.getLocalPort());
-		//Try again using any port which is available, SFML will find an unused port.	
-		if (mUDPSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
-		{
-			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
-		}
-
-		APP_TRACE("Bound UDP socket to port {0}", mUDPSocket.getLocalPort());
-	}
-	else
-	{
-		APP_TRACE("Bound UDP socket to port {0}", mUDPSocket.getLocalPort());
-	}
+	BindUDPSockets();
 }
 
 Client::~Client()
 {
-	mUDPSocket.unbind();
+	mUDPSendSocket.unbind();
+	mUDPRecvSocket.unbind();
+}
+
+void Client::BindUDPSockets()
+{
+	//Bind the UDP socket to an available port.
+	if (mUDPSendSocket.bind(4444) != sf::UdpSocket::Done)
+	{
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPSendSocket.getLocalPort());
+		//Try again using any port which is available, SFML will find an unused port.	
+		if (mUDPSendSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
+		{
+			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
+		}
+
+		APP_TRACE("Bound UDP socket to port {0}", mUDPSendSocket.getLocalPort());
+	}
+	else
+	{
+		APP_TRACE("Bound UDP socket to port {0}", mUDPSendSocket.getLocalPort());
+	}
+
+	mUDPSendPort = mUDPSendSocket.getLocalPort();
+
+	//Bind the UDP socket to an available port.
+	if (mUDPRecvSocket.bind(4445) != sf::UdpSocket::Done)
+	{
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPRecvSocket.getLocalPort());
+		//Try again using any port which is available, SFML will find an unused port.	
+		if (mUDPRecvSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
+		{
+			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
+		}
+
+		APP_TRACE("Bound UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
+	}
+	else
+	{
+		APP_TRACE("Bound UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
+	}
+
+	mUDPRecvPort = mUDPRecvSocket.getLocalPort();
+
 }
 
 void Client::ConnectToServer()
@@ -123,29 +149,37 @@ void Client::ConnectToServer()
 	{
 		APP_ERROR("Connection failed!");
 	}
+	else
+	{
+		APP_TRACE("Connected to server.");
 
- 	APP_TRACE("Connected to server.");
 
+		//Set the sockets to not block the application.
+		mTCPSocket.setBlocking(false);
 
-	//Set the sockets to not block the application.
-	mTCPSocket.setBlocking(false);
-	mUDPSocket.setBlocking(false);
+		//Add the reciece UDP socket to the select.
+		mSelect.add(mUDPRecvSocket);
+
+		mUDPSendSocket.setBlocking(false);
+	}
 }
 
-void Client::SendGamePacket(std::vector<sf::Vector2f> positions)
+void Client::SendGamePacket(std::vector<sf::Vector2f> positions, const float appElapsedTime)
 {
 	GameData data;
 	//Initialise the buffer.
 	if (mPrivelage == ClientPrivelage::Host)
 	{
+		//Host boid positions.
 		data.InitArray(positions.size());
 	}
 	else
 	{
-		//Only one position to send.
+		//Client position.
 		data.InitArray(1);
 	}
 
+	//Fill the buffer.
 	for (int i = 0; i < positions.size(); ++i)
 	{
 		data.x[i] = positions[i].x;
@@ -153,8 +187,8 @@ void Client::SendGamePacket(std::vector<sf::Vector2f> positions)
 		data.objectIDs[i] = i;
 	}
 
-	time_t t = time(0);
-	data.time = (double)t;
+	data.time = appElapsedTime;
+	data.peerUdpRecvPort = mUDPRecvPort;
 	sf::Packet packet;
 
 	if (!(packet << data))
@@ -163,14 +197,22 @@ void Client::SendGamePacket(std::vector<sf::Vector2f> positions)
 	}
 	else
 	{
+		//Variables to write the port and ip address of the sender.
+		sf::IpAddress ipAddress = sf::IpAddress::getLocalAddress();
+		sf::Uint16 port;
 		//Send data to peers.
 		if (mPeers.size() != 0)
 		{
 			for (auto& peer : mPeers)
 			{
-				if (mUDPSocket.send(packet, sf::IpAddress::getLocalAddress(), peer) != sf::UdpSocket::Done)
+				port = peer;
+				if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done)
 				{
-					APP_ERROR("Could not send packet to peer on port {0} !", peer);
+					APP_ERROR("Could not send packet to peer on port {0} !", port);
+				}
+				else
+				{
+					APP_TRACE("PACKET SENT TO PORT : {0}", port);
 				}
 			}
 		}
@@ -181,7 +223,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 {
 	sf::Packet packet;
 	ConnectionData data;
-	data.time = time(0);
+	data.time = 0.0f;
 
 	if (mPrivelage == ClientPrivelage::Host)
 	{
@@ -190,8 +232,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.type = assetType;
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.y;
-		data.udpPort = mUDPSocket.getLocalPort();
-		data.ipAddress = mIPAdress.toInteger();
+		data.peerUdpRecvPort = mUDPRecvPort;
 
 		if (!(packet << data))
 		{
@@ -216,8 +257,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.type = 0;
 		data.sizeX = 0;
 		data.sizeY = 0;
-		data.udpPort = mUDPSocket.getLocalPort();
-		data.ipAddress = mIPAdress.toInteger();
+		data.peerUdpRecvPort = mUDPRecvPort;
 
 		if (!(packet << data))
 		{
@@ -245,86 +285,66 @@ ConnectionData& Client::RecieveHostAssets()
 
 	APP_TRACE("Waiting... gathering host asset data...");
 	
+
 	if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
 	{
 		APP_ERROR("Recieve failed! : RecieveHostAssets()");
-		return connData;
-	}
-	
-	if (!(packet >> connData))
-	{
-		APP_ERROR("Data unpack failed! : RecieveHostAssets()");
 	}
 	else
 	{
-		sf::IpAddress ipAddress = sf::IpAddress(connData.ipAddress);
-		mPeers.push_back(connData.udpPort);
-		return connData;
+		if (!(packet >> connData))
+		{
+			APP_ERROR("Data unpack failed! : RecieveHostAssets()");
+		}
+		else
+		{
+			mPeers.push_back(connData.peerUdpRecvPort);
+		}
 	}
+
+	return connData;
 }
 
 void Client::RecievePacket()
 {
-	sf::Packet packet;
-
-	//Variables to write the port and ip address of the sender.
-	sf::IpAddress serverIPAddress;
-	uint16_t serverPort;
-
-
-	if (mUDPSocket.receive(packet, serverIPAddress, serverPort) == sf::UdpSocket::Done)
+	if (mSelect.wait(sf::milliseconds(16.0f)))
 	{
-		GameData data;
+		if (mSelect.isReady(mUDPRecvSocket))
+		{
+			sf::Packet packet;
 
-		if (!(packet >> data))
-		{
-			APP_ERROR("Could not unpack game data!");
-		}
-		else
-		{
-			mGameData.push_back(data);
-		}
-	}	
-	else
-	{
-		APP_ERROR("Client : Recieve failed ~RecievePacket() ");
-	}
-}
+			//Variables to write the port and ip address of the sender.
+			sf::IpAddress ipAddress;
+			sf::Uint16 port;
+			sf::UdpSocket::Status status;
 
-void Client::GatherNewPorts()
-{
-	sf::Packet packet;
-	ClientPortAndIP data;
-
-	if (mTCPSocket.receive(packet) != sf::UdpSocket::Done)
-	{
-		APP_ERROR("Failed to obtain new ports.");
-	}
-	else
-	{
-		if (!(packet >> data))
-		{
-			APP_ERROR("Failed to pack data : Client GatherNewPorts() ");
-		}
-		else
-		{
-			if (mPeers.size() == 0)
+			if (mUDPRecvSocket.receive(packet, ipAddress, port) != sf::UdpSocket::Done)
 			{
-				APP_TRACE("New peer joined on port {0} .", data.udpPort);
-				mPeers.push_back(data.udpPort);
+				APP_ERROR("Client : Recieve failed ~RecievePacket() ");
 			}
-			else if(mPeers.size() != 0)
+			else 
 			{
-				for (auto& peers : mPeers)
+				GameData data;
+				if (!(packet >> data))
 				{
-					if ((peers != data.udpPort))
+					APP_ERROR("Could not unpack game data!");
+				}
+				else
+				{
+					if (std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
 					{
-						APP_TRACE("New peer joined on port {0} .", data.udpPort);
-						mPeers.push_back(data.udpPort);
+						mPeers.push_back(data.peerUdpRecvPort);
+						APP_TRACE("Added a new valid peer.");
 					}
+					APP_TRACE("Received packet!");
+					mGameData.push_back(data);
 				}
 			}
 		}
+	}
+	else
+	{
+		APP_TRACE("Wait time out..");
 	}
 }
 
@@ -356,5 +376,4 @@ bool Client::Disconnect()
 	}
 	return returnStatus;
 }
-
 

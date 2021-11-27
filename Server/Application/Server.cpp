@@ -1,9 +1,9 @@
 #include "Server.h"
 #include "../Log/ServerLog.h"
-// @brief For connections accross other networks.
+
+
 const sf::IpAddress SERVER_PUBLIC_IP = sf::IpAddress::getPublicAddress();
-// @brief For connections within the same network.
-const sf::IpAddress SERVER_LOCAL_IP = sf::IpAddress::getLocalAddress();
+const sf::IpAddress MACHINE_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
 
 Server::Server()
@@ -98,23 +98,6 @@ void Server::QueryConnections()
 		}
 	}
 
-	ClientPortAndIP cPortIP;
-	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
-	{
-		if (!(mConnections.at(i) == nullptr))
-		{
-			for (sf::Uint32 j = 0; j < mConnections.size(); ++j)
-			{
-				if (!(mConnections.at(j) == nullptr) && (mConnections.at(i)->GetUDPPort() != mConnections.at(j)->GetUDPPort()))
-				{
-					APP_TRACE("Sending connections peer UDPs");
-					cPortIP.udpPort = mConnections.at(j)->GetUDPPort();
-					mConnections.at(i)->SendTCP(cPortIP);
-				}
-			}
-		}
-	}
-
 	if (mHasAssets)
 	{
 		//Check if the client needs assets.
@@ -179,7 +162,7 @@ void Server::RemoveConnection(sf::Uint32 element)
 	}
 
 	//Resize the array to the new number of connections.
-	mConnections.resize(mTotalConnections + 1);
+	mConnections.resize(mTotalConnections);
 
 	APP_TRACE("Connection on port {0} has been closed.", port);
 }
@@ -205,7 +188,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 
 			mHostCount++;
 
-			connection->SetUDPPort(connectionData.udpPort);
+			connection->SetUDPPort(connectionData.peerUdpRecvPort);
 
 			//Streamer gets special ID.
 			connection->SetNetworkID(0);
@@ -256,7 +239,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 
 		connection->SetPrivelage(ClientPrivelage::Client);
 
-		connection->SetUDPPort(connectionData.udpPort);
+		connection->SetUDPPort(connectionData.peerUdpRecvPort);
 
 		connection->SetNetworkID(mTotalConnections);
 
@@ -356,7 +339,7 @@ void Server::StoreClientAssetData(ConnectionData& data)
 	mAssets.sizeX = data.sizeX;
 	mAssets.sizeY = data.sizeY;
 	mAssets.ipAddress = data.ipAddress;
-	mAssets.udpPort = data.udpPort;
+	mAssets.peerUdpRecvPort = data.peerUdpRecvPort;
 	mHasAssets = true;
 }
 

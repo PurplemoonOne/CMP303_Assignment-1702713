@@ -30,13 +30,14 @@ private:
 	Client* mClient;
 
 	float mNetworkTickRate;
+	float mTickUpdateThreshold;
 
-	void HostNetworking();
-	void ClientNetworking();
+	void HostNetworking(const float appElapsedTime);
+	void ClientNetworking(const float appElapsedTime);
 
 	// @brief Prediction functions to smooth out desparities between client and server.
-	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB);
-	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC);
+	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB, int index);
+	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, int index);
 
 private:
 	Renderer mRenderer;

@@ -5,7 +5,8 @@
 
 ClientState::ClientState(sf::Vector2f screenDimensions)
 	:
-	mScreenDimensions(screenDimensions)
+	mScreenDimensions(screenDimensions),
+	mHasAssets(false)
 {
 }
 
@@ -28,16 +29,12 @@ void ClientState::OnStart()
 	mShark = Entity(mScene, "shark", 129);
 	mShark.GetRenderer().graphics.setFillColor(sf::Color::Green);
 	mShark.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
-	mHasAssets = true;
 
 	InitHomeButton();
 }
 
 void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
 {
-	if (!mHasAssets)
-		GenerateHostAssets();
-
 	//Execute the queued event.
 	Event* event = inputHandler.HandleKeyboard(keyboard);
 
@@ -77,14 +74,14 @@ void ClientState::GenerateHostAssets()
 	//Will wait until it has a valid pack of assets.
 	ConnectionData assets = mScene->GetClient()->RecieveHostAssets();
 
-	if (assets.count < 256)
+	if (assets.count > 0)
 	{
 		APP_TRACE("Successfully recieved valid asset descriptions!");
 
 		//Create replicate assets of the host.
 		for (sf::Uint32 i = 0; i < assets.count; ++i)
 		{
-			Entity entity = Entity(mScene, "B" + std::to_string(i));
+			Entity entity = Entity(mScene, "B" + std::to_string(i), i);
 			entity.GetRenderer().graphics.setFillColor(sf::Color::Red);
 			entity.GetRenderer().graphics.setSize(sf::Vector2f(assets.sizeX, assets.sizeY));
 		}

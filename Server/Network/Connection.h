@@ -54,6 +54,8 @@ private:
 
 	// @brief This connection's port number.
 	sf::Uint16 mTCPPort = 0000;
+
+
 	sf::Uint16 mUDPPort = 0;
 
 	// @brief A flag to check whether this connection had been initialised.

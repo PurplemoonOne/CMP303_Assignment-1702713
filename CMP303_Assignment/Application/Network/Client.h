@@ -10,18 +10,15 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(std::vector<sf::Vector2f> positions);
+	void SendGamePacket(std::vector<sf::Vector2f> positions,const float appElapsedTime);
 
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
-	// @brief Recieve a TCP packet from the server.
+	// @brief Recieve game assets from the server.
 	ConnectionData& RecieveHostAssets();
 
-	// @brief Recieve a packet from the host.
+	// @brief Recieve a packet from other peers.
 	void RecievePacket();
-
-	// @brief Fetch any new avaliable ports to send data to.
-	void GatherNewPorts();
 
 	// @brief Establish a connection with the server.
 	void ConnectToServer();
@@ -33,28 +30,32 @@ public:
 
 public:
 	/**		Getters	& Setters	**/
-	const sf::UdpSocket& GetUDPSocket() const { return mUDPSocket; }
-
+	const sf::UdpSocket& GetUDPSendSocket() const { return mUDPSendSocket; }
+	const sf::UdpSocket& GetUDPRecvSocket() const { return mUDPRecvSocket; }
 	const sf::TcpSocket& GetTCPSocket() const { return mTCPSocket; }
-
-	// @brief Return the IP Address of the client.
 	const sf::IpAddress& GetIPAdress() const { return mIPAdress; }
-
-	// @brief Set the client's privelage.
 	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
 
 private:
+
+	void BindUDPSockets();
+
 	// @brief The client's machine IP
 	sf::IpAddress mIPAdress, mServerIpAddress;
 
 	// @brief This client's socket for send and recieving data.
-	sf::UdpSocket mUDPSocket;
+	sf::UdpSocket mUDPSendSocket;
+	sf::UdpSocket mUDPRecvSocket;
 
 	// @brief A socket to connect to the host.
 	sf::TcpSocket mTCPSocket;
 
+	// @brief Select object to query whether a socket is ready to read.
+	sf::SocketSelector mSelect;
+
 	// @brief This connection's port number.
-	sf::Uint16 mUDPPort = 0000, mServerUDPPort = 0000;
+	sf::Uint16 mUDPSendPort = 0000;
+	sf::Uint16 mUDPRecvPort = 0000;
 
 	// @brief Clients privelage
 	ClientPrivelage mPrivelage;

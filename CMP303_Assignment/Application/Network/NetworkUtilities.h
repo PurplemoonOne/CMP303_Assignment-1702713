@@ -30,17 +30,19 @@ struct GameData : public BaseData
 		arraySize = arSize;
 	}
 
+	inline void DeleteData()
+	{
+		if (x) delete x;
+		if (y) delete y;
+		if (objectIDs) delete objectIDs;
+	}
+
+	sf::Uint16 peerUdpRecvPort;
 	sf::Uint32 arraySize;
 	sf::Uint32* objectIDs; 
 	float* x;
 	float* y;
 	
-};
-
-// @brief Special packet structure for the server to send the client confirming a packet was recieved.
-struct ServerPingMSG : public BaseData
-{
-	const char* message = "Packet Confirmed.";
 };
 
 typedef unsigned short int AssetType;
@@ -49,7 +51,7 @@ typedef unsigned short int AssetCount;
 struct ConnectionData : public BaseData
 {
 	sf::Uint8 privelage;
-	sf::Uint16 udpPort;
+	sf::Uint16 peerUdpRecvPort;
 	sf::Uint32 ipAddress;
 	AssetType type;
 	AssetCount count = 0;

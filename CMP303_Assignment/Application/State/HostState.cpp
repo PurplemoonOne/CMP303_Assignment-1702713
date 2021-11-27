@@ -48,7 +48,6 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	for(int i = 0; i < mBoidCount; ++i)
 		mScene->GetRegistery()->UpdateRendererComponent(i);
 
-	//mLivesCount.GetText().text.setString(std::to_string(mBoidCount));
 	if (QueryButton(keyboard))
 	{
 		APP_TRACE("Disconnecting from server....");
@@ -156,9 +155,9 @@ void HostState::InitUI()
 
 void HostState::InitShark()
 {
-	mShark = Entity(mScene, "Shark");
+	mShark = Entity(mScene, "shark");
 	mShark.GetRenderer().graphics.setFillColor(sf::Color::Red);
-	mShark.GetRenderer().graphics.setSize(sf::Vector2f(64.0f, 64.0f));
+	mShark.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
 	mShark.GetTransform().position = sf::Vector2f(rand() % 1000 + 1, rand() % 1000 + 1);
 }
 

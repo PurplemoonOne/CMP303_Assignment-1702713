@@ -216,7 +216,7 @@ struct Registery
 	}
 
 	// @brief Insert a new entity into memory.
-	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size, size_t index = -1)
+	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size, size_t index)
 	{
 		TagComponent tComp = TagComponent(tag);
 		TransformComponent trComp = TransformComponent(initialPosition, 0.0f, size);

@@ -3,37 +3,6 @@
 #include "../Log/ServerLog.h"
 
 
-sf::Packet& operator >>(sf::Packet& packet, GameData& data)
-{
-	packet >> data.time;
-
-	if (((data.x != nullptr) && (data.y != nullptr)))
-	{
-		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
-		for (int i = 0; i < count; ++i)
-		{
-			packet >> data.objectIDs[i] >> data.x[i] >> data.y[i];
-		}
-	}
-
-	return packet;
-}
-
-sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
-{
-	packet << data.time;
-
-	if (((data.x != nullptr) && (data.y != nullptr)))
-	{
-		sf::Uint32 count = (sf::Uint32)(sizeof(data.x) / sizeof(float));
-		for (int i = 0; i < count; ++i)
-		{
-			packet << data.objectIDs[i] << data.x[i] << data.y[i];
-		}
-	}
-
-	return packet;
-}
 
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
@@ -47,12 +16,12 @@ sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 
 sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.udpPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.time >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.udpPort  << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.time << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
@@ -152,14 +121,19 @@ void Connection::RecieveTCP(DisconnectPCKT& message)
 	if (mTCPSocket->receive(packet) != sf::TcpSocket::Done)
 	{
 		APP_ERROR("TCP recieve failed : RecieveTCP() ~ DisconnectPCKT& ");
+		mTCPSocket->disconnect();
 	}
-	
-	if (!(packet >> message))
+	else
 	{
-		APP_ERROR("TCP packing failed : RecieveTCP() ~ DisconnectPCKT& ");
+		if (!(packet >> message))
+		{
+			APP_ERROR("TCP packing failed : RecieveTCP() ~ DisconnectPCKT& ");
+		}
+		else
+		{
+			APP_TRACE("Connection has requested to quit.");
+		}
 	}
-
-	APP_TRACE("Connection has requested to quit.");
 }
 
 void Connection::RecieveTCP(ConnectionData& data)

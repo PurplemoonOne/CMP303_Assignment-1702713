@@ -40,9 +40,6 @@ private:
 	// @brief Select object to query sockets for read or write operations.
 	sf::SocketSelector mSelect;
 
-	// @brief Array of game updates.
-	std::vector<GameData> mGameData;
-
 	// @brief Array of connections to the server.
 	std::vector<Connection*> mConnections;
 
