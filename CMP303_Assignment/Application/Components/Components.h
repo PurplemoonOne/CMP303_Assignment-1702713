@@ -213,6 +213,7 @@ struct Registery
 		texts.resize(0);
 		animations.clear();
 		animations.resize(0);	
+		idMap.clear();
 	}
 
 	// @brief Insert a new entity into memory.
@@ -237,12 +238,12 @@ struct Registery
 		else
 		{
 			//Insert components based on ID.
-			tags.insert(tags.begin() + index, tComp);
-			transforms.insert(transforms.begin() + index, trComp);
-			graphics.insert(graphics.begin() + index, rComp);
-			textures.insert(textures.begin() + index, TextureComponent());
-			animations.insert(animations.begin() + index, AnimatorComponent());
-			texts.insert(texts.begin() + index, TextComponent());
+			tags.at(index) = tComp;
+			transforms.at(index) = trComp;
+			graphics.at(index) = rComp;
+			textures.at(index) = TextureComponent();
+			animations.at(index) = AnimatorComponent();
+			texts.at(index) = TextComponent();
 
 			transforms.at(index).id = index;
 			idMap.emplace(tag, index);

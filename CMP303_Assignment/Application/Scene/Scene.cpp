@@ -23,7 +23,7 @@ Scene* Scene::mContext = nullptr;
 Scene::Scene(sf::RenderWindow* window)
 	:
 	mActiveState(nullptr),
-	mTickUpdateThreshold(0.0125f)
+	mTickUpdateThreshold(0.01f)
 {
 	if (mContext != nullptr)
 		ASSERT(!mContext, "Only one application context can exist at once!");

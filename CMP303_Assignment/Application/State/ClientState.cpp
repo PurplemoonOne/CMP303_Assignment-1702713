@@ -17,7 +17,7 @@ ClientState::~ClientState()
 void ClientState::OnStart()
 {
 	//Reserve space.
-	mScene->GetRegistery()->ReserveBuffer(260);
+	mScene->GetRegistery()->ReserveBuffer(80);
 
 	//Connect to the server.
 	mScene->GetClient()->ConnectToServer();
@@ -26,7 +26,7 @@ void ClientState::OnStart()
 	mScene->GetClient()->SendConnectionInformation();
 
 	//Create shark.
-	mShark = Entity(mScene, "shark", 129);
+	mShark = Entity(mScene, "shark", 65);
 	mShark.GetRenderer().graphics.setFillColor(sf::Color::Green);
 	mShark.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
 
@@ -119,7 +119,7 @@ bool ClientState::QueryButton(Keyboard* keyboard)
 
 void ClientState::InitHomeButton()
 {
-	mHomeButton = Entity(mScene, "HomeButton", 130);
+	mHomeButton = Entity(mScene, "HomeButton", 66);
 
 	mHomeButton.GetText().font.loadFromFile("Assets/font.ttf");
 

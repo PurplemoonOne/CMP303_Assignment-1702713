@@ -112,11 +112,11 @@ void Client::BindUDPSockets()
 			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
 		}
 
-		APP_TRACE("Bound UDP socket to port {0}", mUDPSendSocket.getLocalPort());
+		APP_TRACE("Bound Send UDP socket to port {0}", mUDPSendSocket.getLocalPort());
 	}
 	else
 	{
-		APP_TRACE("Bound UDP socket to port {0}", mUDPSendSocket.getLocalPort());
+		APP_TRACE("Bound Send UDP socket to port {0}", mUDPSendSocket.getLocalPort());
 	}
 
 	mUDPSendPort = mUDPSendSocket.getLocalPort();
@@ -131,11 +131,11 @@ void Client::BindUDPSockets()
 			APP_ERROR("We're sorry, unfortunately there are no available ports on this machine.");
 		}
 
-		APP_TRACE("Bound UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
+		APP_TRACE("Bound Recieve UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
 	}
 	else
 	{
-		APP_TRACE("Bound UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
+		APP_TRACE("Bound Recieve UDP socket to port {0}", mUDPRecvSocket.getLocalPort());
 	}
 
 	mUDPRecvPort = mUDPRecvSocket.getLocalPort();
