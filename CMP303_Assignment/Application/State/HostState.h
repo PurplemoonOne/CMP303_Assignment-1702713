@@ -10,13 +10,12 @@ class Boid
 {
 public:
 	Boid() = default;
-	Boid(Scene* scene, std::string tag);
+	Boid(Scene* scene, std::string tag, sf::Texture* texture);
 	Boid(const Boid&) = default;
 	~Boid() = default;
 
 	Entity mEntity;
 	bool mAlive;
-
 };
 
 class Flock
@@ -29,6 +28,7 @@ public:
 	void CreateFlock(Scene* scene, sf::Uint32 count);
 
 	std::vector<Boid> mBoids;
+	sf::Texture mFishTexture;
 
 };
 
@@ -40,6 +40,9 @@ public:
 
 	sf::Uint32 GetBoidCount() const { return mBoidCount; }
 
+	void GenerateClientAssets();
+	const bool HasAssets() const { return mHasAssets; }
+
 private:
 	virtual void OnStart() override;
 	virtual void OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard = nullptr, Gamepad* gamepad = nullptr) override;
@@ -50,7 +53,6 @@ private:
 	bool QueryButton(Keyboard* keyboard);
 	void InitHomeButton();
 	void InitUI();
-	void InitShark();
 private:
 	//Gameplay
 	Flock mFlock;
@@ -63,7 +65,8 @@ private:
 
 	sf::Vector2f mScreenDimensions;
 	sf::Uint32 mBoidCount = 0;
-
+	bool mHasAssets = false;
+	sf::Texture mSwordFishTexture;
 private:
 	// @brief Simple functions to calculate the rules of a boid.
 	

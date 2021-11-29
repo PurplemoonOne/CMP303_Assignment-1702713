@@ -8,13 +8,12 @@ const sf::Uint16 SERVER_PORT = 5555;
 
 Server::Server()
 	:
-	mLatency(0.f),
-	mJitter(0.f),
-	mHasAssets(false)
+	mHasHostAssets(false),
+	mHasClientAssets(false)
 {
 	//Initialise log system.
 	ServerLog::Init();
-
+	mConnections.fill(nullptr);
 }
 
 Server::~Server()
@@ -85,33 +84,70 @@ void Server::QueryConnections()
 			{
 				if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
 				{
-					DisconnectPCKT chatData;
-					mConnections.at(i)->RecieveTCP(chatData);
+					DisconnectPCKT data;
+					mConnections.at(i)->RecieveTCP(data);
 
-					if (chatData.quit == 1)
+					if (data.quit == 1)
 					{
 						RemoveConnection(i);
-						continue;//Move onto the next connection.
+						break;
 					}
 				}
 			}
 		}
 	}
 
-	if (mHasAssets)
+	//if (mHasAssets)
+	//{
+	//	//Check if the client needs assets.
+	//	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+	//	{
+	//		if (mConnections.at(i) != nullptr)
+	//		{
+	//			//If the client is still waiting for assets send them now.
+	//			if (!mConnections.at(i)->HasAssets())
+	//			{
+	//				if (mConnections.at(i)->GetConnectionPrivelage() == ClientPrivelage::Client)
+	//				{
+	//					if (mConnections.at(i)->SendAssets(mAssets))
+	//					{
+	//						mConnections.at(i)->SetHasAssets(true);
+	//					}
+	//				}
+	//				else
+	//				{
+	//					if (mConnections.at(i)->SendAssets(mAssets))
+	//					{
+	//						mConnections.at(i)->SetHasAssets(true);
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+
+	if (mConnections.at(1) != nullptr)
 	{
-		//Check if the client needs assets.
-		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
+		if (!mConnections.at(1)->HasAssets())
 		{
-			if (mConnections.at(i) != nullptr)
+			if (mHasHostAssets && !(mConnections.at(1)->HasAssets()))
 			{
-				//If the client is still waiting for assets send them now.
-				if (!mConnections.at(i)->HasAssets())
+				if (mConnections.at(1)->SendAssets(mHostAssets))
 				{
-					if (mConnections.at(i)->SendTCP(mAssets))
-					{
-						mConnections.at(i)->SetHasAssets(true);
-					}
+					mConnections.at(1)->SetHasAssets(true);
+				}
+			}
+		}
+	}
+	if (mConnections.at(0) != nullptr)
+	{
+		if (!mConnections.at(0)->HasAssets())
+		{
+			if (mHasClientAssets && !(mConnections.at(0)->HasAssets()))
+			{
+				if (mConnections.at(0)->SendAssets(mClientAssets))
+				{
+					mConnections.at(0)->SetHasAssets(true);
 				}
 			}
 		}
@@ -122,16 +158,21 @@ void Server::QueryConnections()
 void Server::RemoveConnection(sf::Uint32 element)
 {
 	sf::Uint16 port = mConnections.at(element)->GetTCPPort();
+	sf::IpAddress ipAddress = mConnections.at(element)->GetIPAddress();
 
-	if (mConnections.at(element)->GetConnectionPrivelage() == ClientPrivelage::Host)
+	//Host has left...
+	if (element == 0)
 	{
-		mHasAssets = false;
+		mHasHostAssets = false;
 		mHostCount--;
 	}
+	//Client has left.
 	else
 	{
+		mHasClientAssets = false;
 		mClientCount--;
 	}
+
 	mTotalConnections--;
 
 	//Remove the reference to the socket from the select object.
@@ -142,29 +183,17 @@ void Server::RemoveConnection(sf::Uint32 element)
 
 	//Delete the socket object from the heap.
 	delete mConnections.at(element)->GetTCPSocket();
+	delete mConnections.at(element);
+	mConnections.at(element) = nullptr;
 
-	//Delete the connection object from the array.
 	if (element == 0)
 	{
-		delete mConnections.at(element);
-		mConnections.at(element) = nullptr;
+		APP_TRACE("Host on port {0} : IP Adreess {1} has left.", port, ipAddress.toString());
 	}
 	else
 	{
-		//Swap the dead connection to the end. (O(N))
-		for (sf::Uint32 i = element; i < (mConnections.size() - 1); ++i)
-		{
-			std::swap(mConnections.at(i), mConnections.at((i + 1)));
-		}
-
-		delete mConnections.back();
-		mConnections.back() = nullptr;
+		APP_TRACE("Client on port {0} : IP Adreess {1} has left.", port, ipAddress.toString());
 	}
-
-	//Resize the array to the new number of connections.
-	mConnections.resize(mTotalConnections);
-
-	APP_TRACE("Connection on port {0} has been closed.", port);
 }
 
 void Server::InitConnection(sf::TcpSocket* socket)
@@ -174,9 +203,8 @@ void Server::InitConnection(sf::TcpSocket* socket)
 
 	//Gather information describing this connection.
 	ConnectionData connectionData;
-	connection->RecieveTCP(connectionData);
+	connection->RecieveAssets(connectionData);
 
-	// If '1' then connection is a client.
 	if (connectionData.privelage == 0)
 	{
 		//If the number of host's is not greater than 1.
@@ -185,33 +213,19 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			APP_TRACE("A new host has joined!");
 
 			connection->SetPrivelage(ClientPrivelage::Host);
+			connection->SetUDPPort(connectionData.peerUdpRecvPort);
+			connection->SetNetworkID(mTotalConnections);
+			connection->SetInit(true);
+			connection->SetHasAssets(false);
+			mSelect.add(*connection->GetTCPSocket());
+			mConnections.at(0) = connection;
+
+			StoreAssetData(connectionData);
+			
+			APP_TRACE("Storing host asset description.");
 
 			mHostCount++;
-
-			connection->SetUDPPort(connectionData.peerUdpRecvPort);
-
-			//Streamer gets special ID.
-			connection->SetNetworkID(0);
-
-			//Add the streamers sockets to the select.
-			mSelect.add(*connection->GetTCPSocket());
-
-			//insert the streamer at the front of the array.
-			mConnections.push_back(connection);
-
-			//Finally set the streamer to initialised.
-			connection->SetInit(true);
-
-			//incriment total connections.
 			mTotalConnections++;
-
-			connection->SetHasAssets(true);
-
-			APP_TRACE("Generating assets...");
-
-			StoreClientAssetData(connectionData);
-			
-			APP_TRACE("Generating assets completed!");
 		}
 
 		//Another host attempted to join the server.
@@ -222,7 +236,6 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			DisconnectPCKT connectionData;
 			connectionData.message = "The server has too many hosts, try again later.";
 			connectionData.id = 0;
-			connectionData.time = time(0);
 			connection->SendTCP(connectionData);
 			connection->GetTCPSocket()->disconnect();
 			delete connection;
@@ -235,27 +248,37 @@ void Server::InitConnection(sf::TcpSocket* socket)
 	//A client joined.
 	else if(connectionData.privelage == 1)
 	{
-		APP_TRACE("A new client has joined!");
+		if (mClientCount < 1)
+		{
+			APP_TRACE("A new client has joined!");
 
-		connection->SetPrivelage(ClientPrivelage::Client);
+			connection->SetPrivelage(ClientPrivelage::Client);
+			connection->SetUDPPort(connectionData.peerUdpRecvPort);
+			connection->SetNetworkID(mTotalConnections);
+			connection->SetInit(true);
+			connection->SetHasAssets(false);
+			mConnections.at(1) = connection;
+			mSelect.add(*connection->GetTCPSocket());
+			StoreAssetData(connectionData);
+			APP_TRACE("Storing client asset description.");
 
-		connection->SetUDPPort(connectionData.peerUdpRecvPort);
+			mClientCount++;
+			mTotalConnections++;
+		}
 
-		connection->SetNetworkID(mTotalConnections);
-
-		mConnections.push_back(connection);
-	
-		//Add the streamers sockets to the select.
-		mSelect.add(*connection->GetTCPSocket());
-
-		//Finally set the streamer to initialised.
-		connection->SetInit(true);
-
-		connection->SetHasAssets(false);
-
-
-		mClientCount++;
-		mTotalConnections++;
+		else
+		{
+			//Send a message to the client attepted to host and close connection.
+			APP_WARNING("Another connection attempted to join!");
+			DisconnectPCKT connectionData;
+			connectionData.message = "The server has too many clients, try again later.";
+			connectionData.id = 0;
+			connection->SendTCP(connectionData);
+			connection->GetTCPSocket()->disconnect();
+			delete connection;
+			connection = nullptr;
+			return;
+		}
 	}
 
 	//Something went wrong.
@@ -265,82 +288,30 @@ void Server::InitConnection(sf::TcpSocket* socket)
 		connection = nullptr;
 		APP_WARNING("Unknown entity has joined... Resolving.");
 	}
-
 }
 
-/*
-sf::Vector2f Server::LinearPrediction(const GameData& messageA, const GameData& messageB)
+void Server::StoreAssetData(ConnectionData& data)
 {
-	float dt = messageA.time - messageB.time;
-
-	float vX = (messageA.x - messageB.x) /dt;
-	float vY = (messageA.y - messageB.y) /dt;
-	
-	return { messageA.x + vX * dt, messageA.y + vY * dt };
-}
-
-sf::Vector2f Server::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC)
-{
-
-	float dtAB = messageA.time - messageB.time;
-	float dtBC = messageB.time - messageC.time;
-
-	float vX = (messageA.x - messageB.x) / dtAB;
-	float vY = (messageA.y - messageB.y) / dtAB;
-	float aX = (messageA.x - messageB.x) / dtAB - (messageB.x - messageC.x) / dtBC;
-	float aY = (messageA.y - messageB.y) / dtAB - (messageB.y - messageC.y) / dtBC;
-	float sX = (messageA.x - messageB.x) / dtAB;
-	float sY = (messageA.y - messageB.y) / dtAB;
-
-	return { messageA.x + vX * dtAB + 0.5f * aX * dtBC, messageA.y + vY * dtAB + 0.5f * aY * dtBC };
-}
-
-void Server::Prediction(std::vector<sf::RectangleShape>& mGraphics, std::vector<GameData>& messages)
-{
-	if (mGameData.size() >= (mGraphics.size() * 2))
+	if (data.privelage == 0)
 	{
-		//Sort packets into order.
-		std::sort(mGameData.begin(), mGameData.end(), GamePacketIDSort());
-
-		//For linear we need at least two packets of data to determine position.
-		//After (recieving 2 * numberOfEntities) we can begin to predict new positions.
-		int offset = mGraphics.size();
-		for (int i = 0; i < mGraphics.size(); ++i)
-		{
-			if (!((i + offset) < mGameData.size()))
-			{
-				continue;
-			}
-			else
-			{
-				//Obtain the predicted posistion.
-				sf::Vector2f predictedPosition = LinearPrediction(mGameData.at(i), mGameData.at(i + offset));
-
-				sf::Vector2f newPosition = sf::Vector2f
-				(
-					//Linear interpolate between the last position and new position by 60%
-					lerp(mGraphics[i].getPosition().x, predictedPosition.x, 0.6f),
-					lerp(mGraphics[i].getPosition().y, predictedPosition.y, 0.6f)
-				);
-
-				mGraphics[i].setPosition(newPosition);
-			}
-		}
-		mGameData.clear();
-		mGameData.resize(0);
+		mHostAssets.count = data.count;
+		mHostAssets.type = data.type;
+		mHostAssets.sizeX = data.sizeX;
+		mHostAssets.sizeY = data.sizeY;
+		mHostAssets.ipAddress = data.ipAddress;
+		mHostAssets.peerUdpRecvPort = data.peerUdpRecvPort;
+		mHasHostAssets = true;
 	}
-}
-*/
-
-void Server::StoreClientAssetData(ConnectionData& data)
-{
-	mAssets.count = data.count;
-	mAssets.type = data.type;
-	mAssets.sizeX = data.sizeX;
-	mAssets.sizeY = data.sizeY;
-	mAssets.ipAddress = data.ipAddress;
-	mAssets.peerUdpRecvPort = data.peerUdpRecvPort;
-	mHasAssets = true;
+	else
+	{
+		mClientAssets.count = data.count;
+		mClientAssets.type = data.type;
+		mClientAssets.sizeX = data.sizeX;
+		mClientAssets.sizeY = data.sizeY;
+		mClientAssets.ipAddress = data.ipAddress;
+		mClientAssets.peerUdpRecvPort = data.peerUdpRecvPort;
+		mHasClientAssets = true;
+	}
 }
 
 void Server::Run()

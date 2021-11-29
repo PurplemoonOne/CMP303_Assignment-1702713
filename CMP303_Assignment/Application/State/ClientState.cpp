@@ -23,12 +23,14 @@ void ClientState::OnStart()
 	mScene->GetClient()->ConnectToServer();
 
 	//Send client data to server.
-	mScene->GetClient()->SendConnectionInformation();
+	mScene->GetClient()->SendConnectionInformation(1, 1, {128.0f, 128.0f});
 
+	mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
 	//Create shark.
-	mShark = Entity(mScene, "shark", 65);
-	mShark.GetRenderer().graphics.setFillColor(sf::Color::Green);
-	mShark.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
+	mShark = Entity(mScene, "shark", &mSwordFishTexture, 65);
+	mShark.GetRenderer().sprite.setScale({ 4.0f, 4.0f });
+	mShark.GetRenderer().bShouldRenderGFX = false;
+	mShark.GetTransform().scale = { 4.0f, 4.0f };
 
 	InitHomeButton();
 }
@@ -46,13 +48,14 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 	}
 
 	//Update the position of the sprites.
-	mScene->GetRegistery()->UpdateRendererComponent("shark");
+	mScene->GetRegistery()->UpdateSpriteComponent("shark");
 
 	if (QueryButton(keyboard))
 	{
 		APP_TRACE("Disconnecting from server....");
 		if (mScene->GetClient()->Disconnect())
 		{
+			mHasAssets = false;
 			delete mScene->GetClient();
 			mScene->TransitionState("menu");
 		}
@@ -72,20 +75,22 @@ void ClientState::OnDetach()
 void ClientState::GenerateHostAssets()
 {
 	//Will wait until it has a valid pack of assets.
-	ConnectionData assets = mScene->GetClient()->RecieveHostAssets();
+	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromServer();
 
 	if (assets.count > 0)
 	{
+		mFishTexture.loadFromFile("Assets/fishGfx/fish.png");
 		APP_TRACE("Successfully recieved valid asset descriptions!");
 
 		//Create replicate assets of the host.
 		for (sf::Uint32 i = 0; i < assets.count; ++i)
 		{
-			Entity entity = Entity(mScene, "B" + std::to_string(i), i);
-			entity.GetRenderer().graphics.setFillColor(sf::Color::Red);
-			entity.GetRenderer().graphics.setSize(sf::Vector2f(assets.sizeX, assets.sizeY));
+			Entity entity = Entity(mScene, "B" + std::to_string(i), &mFishTexture, i);
+			entity.GetRenderer().bShouldRenderGFX = false;
+			entity.GetRenderer().sprite.setScale({ 2.f, 2.f });
+			entity.GetTransform().scale = { 2.0f, 2.0f };
 		}
-
+		mBoidCount = assets.count;
 		mHasAssets = true;
 	}
 }
@@ -119,7 +124,7 @@ bool ClientState::QueryButton(Keyboard* keyboard)
 
 void ClientState::InitHomeButton()
 {
-	mHomeButton = Entity(mScene, "HomeButton", 66);
+	mHomeButton = Entity(mScene, "HomeButton", nullptr, 66);
 
 	mHomeButton.GetText().font.loadFromFile("Assets/font.ttf");
 

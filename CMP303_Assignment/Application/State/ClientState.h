@@ -21,7 +21,8 @@ public:
 private:
 	bool QueryButton(Keyboard* keyboard);
 	void InitHomeButton();
-
+	sf::Texture mFishTexture;
+	sf::Texture mSwordFishTexture;
 private:
 	InputHandler inputHandler;
 	Entity mShark;

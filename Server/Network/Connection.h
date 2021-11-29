@@ -27,12 +27,12 @@ public:
 
 	// @brief Send important server announcements via TCP.
 	void SendTCP(DisconnectPCKT& message);
-	bool SendTCP(ConnectionData& message);
+	bool SendAssets(ConnectionData& message);
 	void SendTCP(ClientPortAndIP& data);
 
 	// @brief Recieve TCP messages from connections.
 	void RecieveTCP(DisconnectPCKT& message);
-	void RecieveTCP(ConnectionData& data);
+	void RecieveAssets(ConnectionData& data);
 	void RecieveTCP(ClientPortAndIP& data);
 
 	void SetHasAssets(bool value) { mHasAssets = value; }

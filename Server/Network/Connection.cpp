@@ -36,8 +36,6 @@ sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
 
 
 Connection::Connection(sf::TcpSocket* socket)
-	:
-	mConnPrivelage(ClientPrivelage::None)
 {
 	//Create a new tcp socket for the server to talk to the client on.
 	mTCPSocket = socket;
@@ -67,14 +65,14 @@ void Connection::SendTCP(DisconnectPCKT& message)
 	}
 }
 
-bool Connection::SendTCP(ConnectionData& message)
+bool Connection::SendAssets(ConnectionData& message)
 {
 	sf::Packet packet;
 	bool status = false;
 
 	if (!(packet << message))
 	{
-		APP_ERROR("Could not pack assets message.");
+		APP_ERROR("Could not pack assets packet.");
 	}
 	else
 	{
@@ -121,7 +119,7 @@ void Connection::RecieveTCP(DisconnectPCKT& message)
 	if (mTCPSocket->receive(packet) != sf::TcpSocket::Done)
 	{
 		APP_ERROR("TCP recieve failed : RecieveTCP() ~ DisconnectPCKT& ");
-		mTCPSocket->disconnect();
+
 	}
 	else
 	{
@@ -136,7 +134,7 @@ void Connection::RecieveTCP(DisconnectPCKT& message)
 	}
 }
 
-void Connection::RecieveTCP(ConnectionData& data)
+void Connection::RecieveAssets(ConnectionData& data)
 {
 	sf::Packet packet;
 

@@ -16,9 +16,17 @@ void Renderer::Submit(const std::vector<RendererComponent>& objects, const std::
 
 	for (auto& drawable : objects)
 	{
-		if (drawable.bInit)
+		if (drawable.bShouldRenderGFX)
 		{
 			window->draw(drawable.graphics);
+		}
+	}
+
+	for (auto& drawable : objects)
+	{
+		if (drawable.bShouldRenderSPR)
+		{
+			window->draw(drawable.sprite);
 		}
 	}
 

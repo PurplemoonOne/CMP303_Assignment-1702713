@@ -24,7 +24,7 @@ private:
 	void QueryConnections();
 
 	// @brief Function to generate level assets based on the description given.
-	void StoreClientAssetData(ConnectionData& data);
+	void StoreAssetData(ConnectionData& data);
 
 	// @brief Removes the connection and shuffles the array to fit the new amount of connections.
 	void RemoveConnection(sf::Uint32 element);
@@ -41,22 +41,16 @@ private:
 	sf::SocketSelector mSelect;
 
 	// @brief Array of connections to the server.
-	std::vector<Connection*> mConnections;
+	std::array<Connection*, 2> mConnections;
 
+	// @brief A bool to check whether the asset description have been stored on the server.
+	bool mHasHostAssets = false;
+	bool mHasClientAssets = false;
 
-	// @brief A variable to track latency with respect to the last two packets recieved.
-	float mLatency;
-
-	// @brief A variable to track jitter from the last N packets.
-	float mJitter;
-
-	// @brief A bool to check whether the assets have been initialised on the server.
-	bool mHasAssets = false;
-
-	std::vector<sf::RectangleShape> mGraphics;
 	sf::Uint32 mHostCount = 0;
 	sf::Uint32 mClientCount = 0;
 	sf::Uint32 mTotalConnections = 0;
-	ConnectionData mAssets{};
+	ConnectionData mHostAssets{};
+	ConnectionData mClientAssets{};
 };
 

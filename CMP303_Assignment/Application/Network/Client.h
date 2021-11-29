@@ -15,7 +15,7 @@ public:
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
 	// @brief Recieve game assets from the server.
-	ConnectionData& RecieveHostAssets();
+	ConnectionData& RecieveAssetsDescFromServer();
 
 	// @brief Recieve a packet from other peers.
 	void RecievePacket();
@@ -27,6 +27,8 @@ public:
 	bool Disconnect();
 
 	std::vector<GameData>& GetGameData() { return mGameData; }
+
+	const sf::Uint32 GetPeerCount() const { return mPeers.size(); }
 
 public:
 	/**		Getters	& Setters	**/

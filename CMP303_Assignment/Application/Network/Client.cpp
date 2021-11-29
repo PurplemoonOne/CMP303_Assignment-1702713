@@ -86,8 +86,7 @@ sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
 Client::Client()
 	:
 	mJitter(0.f),
-	mLatency(0.f),
-	mPrivelage(ClientPrivelage::None)
+	mLatency(0.f)
 {
 	// Fetch the machines IP Address. 
 	mIPAdress = sf::IpAddress::getLocalAddress();
@@ -96,8 +95,7 @@ Client::Client()
 
 Client::~Client()
 {
-	mUDPSendSocket.unbind();
-	mUDPRecvSocket.unbind();
+
 }
 
 void Client::BindUDPSockets()
@@ -159,7 +157,6 @@ void Client::ConnectToServer()
 
 		//Add the reciece UDP socket to the select.
 		mSelect.add(mUDPRecvSocket);
-
 		mUDPSendSocket.setBlocking(false);
 	}
 }
@@ -253,10 +250,10 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 	else
 	{
 		data.privelage = 1;
-		data.count = 0;
+		data.count = 1;
 		data.type = 0;
-		data.sizeX = 0;
-		data.sizeY = 0;
+		data.sizeX = 128.0f;
+		data.sizeY = 128.0f;
 		data.peerUdpRecvPort = mUDPRecvPort;
 
 		if (!(packet << data))
@@ -277,14 +274,13 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 	}
 }
 
-ConnectionData& Client::RecieveHostAssets()
+ConnectionData& Client::RecieveAssetsDescFromServer()
 {
 	sf::Packet packet;
 	ConnectionData connData;
 	connData.count = 0;
 
-	APP_TRACE("Waiting... gathering host asset data...");
-	
+	APP_TRACE("Gathering asset data...");
 
 	if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
 	{
@@ -298,7 +294,10 @@ ConnectionData& Client::RecieveHostAssets()
 		}
 		else
 		{
-			mPeers.push_back(connData.peerUdpRecvPort);
+			if (std::find(mPeers.begin(), mPeers.end(), connData.peerUdpRecvPort) == mPeers.end())
+			{
+				mPeers.push_back(connData.peerUdpRecvPort);
+			}
 		}
 	}
 
@@ -331,13 +330,24 @@ void Client::RecievePacket()
 				}
 				else
 				{
-					if (std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
+					//if (std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
+					//{
+					//	mPeers.push_back(data.peerUdpRecvPort);
+					//	APP_TRACE("Added a new valid peer.");
+					//}
+	
+					//Check for packet duplication...
+				/*	if (std::find(mGameData.begin(), mGameData.end(), data.time) == mGameData.end())
 					{
-						mPeers.push_back(data.peerUdpRecvPort);
-						APP_TRACE("Added a new valid peer.");
+						APP_WARNING("Duplicate packet recieved!");
 					}
-					APP_TRACE("Received packet!");
-					mGameData.push_back(data);
+					else
+					{
+					}*/
+						//Otherwise we don't have this packet so store it.
+						APP_TRACE("Received packet!");
+						mGameData.push_back(data);
+					
 				}
 			}
 		}
@@ -367,10 +377,13 @@ bool Client::Disconnect()
 		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
 		{
 			APP_ERROR("Could not disconnect from server gracefully......");
+			exit(-1);
 		}
 		else
 		{
 			mTCPSocket.disconnect();
+			mUDPSendSocket.unbind();
+			mUDPRecvSocket.unbind();
 			returnStatus = true;
 		}
 	}

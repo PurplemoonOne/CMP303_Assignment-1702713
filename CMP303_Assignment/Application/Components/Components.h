@@ -72,20 +72,29 @@ struct RendererComponent
 	RendererComponent(const RendererComponent& other) 
 		:
 		graphics(other.graphics),
-		bInit(true)
+		sprite(other.sprite),
+		bShouldRenderGFX(true),
+		bShouldRenderSPR(true)
 	{}
 
-	RendererComponent(sf::Vector2f position, sf::Vector2f size, float rotation, sf::Color colour, sf::Font font = sf::Font(), sf::Text text = sf::Text())
+	RendererComponent(sf::Vector2f position, sf::Vector2f size, float rotation, sf::Color colour, sf::Texture* texture, sf::Font font = sf::Font(), sf::Text text = sf::Text())
 		:
 		graphics(size)
 	{
-		bInit = true;
+		bShouldRenderGFX = true;
+
+		if (texture != nullptr)
+		{
+			sprite.setTexture(*texture);
+			bShouldRenderSPR = true;
+		}
 	}
 
 	sf::RectangleShape graphics;
 	sf::Sprite sprite;
 
-	bool bInit = false;
+	bool bShouldRenderGFX = false;
+	bool bShouldRenderSPR = false;
 };
 
 struct TextComponent
@@ -217,11 +226,11 @@ struct Registery
 	}
 
 	// @brief Insert a new entity into memory.
-	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size, size_t index)
+	void AddNewEntity(const std::string& tag, sf::Vector2f initialPosition, sf::Vector2f size, sf::Texture* texture, size_t index)
 	{
 		TagComponent tComp = TagComponent(tag);
 		TransformComponent trComp = TransformComponent(initialPosition, 0.0f, size);
-		RendererComponent rComp = RendererComponent(initialPosition, size, 0.0f, sf::Color(255, 0, 0));
+		RendererComponent rComp = RendererComponent(initialPosition, size, 0.0f, sf::Color(255, 0, 0), texture);
 
 		if (index == -1)
 		{
@@ -267,7 +276,7 @@ struct Registery
 	}
 
 	// @brief Update the entity's renderer component using a custom tag.
-	void UpdateRendererComponent(const std::string& tag)
+	void UpdateGraphicsComponent(const std::string& tag)
 	{
 		graphics[idMap[tag]].graphics.setPosition(transforms[idMap[tag]].position);
 		graphics[idMap[tag]].graphics.setRotation(transforms[idMap[tag]].rotation);
@@ -275,11 +284,27 @@ struct Registery
 	}
 
 	// @brief Update the entity's renderer component using it's assigned ID.
-	void UpdateRendererComponent(const uint32_t id)
+	void UpdateGraphicsComponent(const uint32_t id)
 	{
   		graphics[id].graphics.setPosition(transforms[id].position);
 		graphics[id].graphics.setRotation(transforms[id].rotation);
 		graphics[id].graphics.setScale(transforms[id].scale);
+	}
+
+	// @brief Update the entity's renderer component using a custom tag.
+	void UpdateSpriteComponent(const std::string& tag)
+	{
+		graphics[idMap[tag]].sprite.setPosition(transforms[idMap[tag]].position);
+		graphics[idMap[tag]].sprite.setRotation(transforms[idMap[tag]].rotation);
+		graphics[idMap[tag]].sprite.setScale(transforms[idMap[tag]].scale);
+	}
+
+	// @brief Update the entity's renderer component using it's assigned ID.
+	void UpdateSpriteComponent(const uint32_t id)
+	{
+		graphics[id].sprite.setPosition(transforms[id].position);
+		graphics[id].sprite.setRotation(transforms[id].rotation);
+		graphics[id].sprite.setScale(transforms[id].scale);
 	}
 
 	// @brief Update the entity's renderer component using it's assigned ID.
@@ -295,7 +320,7 @@ struct Registery
 	}
 
 	// @brief Update the entity's renderer component using a custom tag.
-	void UpdateRendererComponent(const std::string& tag, const TransformComponent& transform)
+	void UpdateGraphicsComponent(const std::string& tag, const TransformComponent& transform)
 	{
 		graphics[idMap[tag]].graphics.setPosition(transform.position);
 		graphics[idMap[tag]].graphics.setRotation(transform.rotation);
@@ -303,7 +328,7 @@ struct Registery
 	}
 
 	// @brief Update the entity's renderer component using it's assigned ID.
-	void UpdateRendererComponent(const uint32_t id, const TransformComponent& transform)
+	void UpdateGraphicsComponent(const uint32_t id, const TransformComponent& transform)
 	{
 		graphics[id].graphics.setPosition(transform.position);
 		graphics[id].graphics.setRotation(transform.rotation);
@@ -311,14 +336,14 @@ struct Registery
 	}
 
 	// @brief Update the entity's renderer component using a custom tag.
-	void UpdateRendererComponent(const std::string& tag, sf::Vector2f position, sf::Vector2f size, float rotation, sf::Vector2f scale)
+	void UpdateGraphicsComponent(const std::string& tag, sf::Vector2f position, sf::Vector2f size, float rotation, sf::Vector2f scale)
 	{
 		graphics[idMap[tag]].graphics.setPosition(position);
 		graphics[idMap[tag]].graphics.setScale(scale);
 	}
 
 	// @brief Update the entity's renderer component using it's assigned ID.
-	void UpdateRendererComponent(const uint32_t id, sf::Vector2f position, sf::Vector2f size, float rotation, sf::Vector2f scale)
+	void UpdateGraphicsComponent(const uint32_t id, sf::Vector2f position, sf::Vector2f size, float rotation, sf::Vector2f scale)
 	{
 		graphics[id].graphics.setPosition(position);
 		graphics[id].graphics.setScale(scale);

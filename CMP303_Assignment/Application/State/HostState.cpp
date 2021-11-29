@@ -19,7 +19,6 @@ void HostState::OnStart()
 	mFlock.CreateFlock(mScene, (mBoidCount = 64));
 
 	InitHomeButton();
-	InitShark();
 
 	sf::Vector2f size = mFlock.mBoids.back().mEntity.GetRenderer().graphics.getSize();
 
@@ -46,13 +45,14 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 
 	//Update the position of the sprites.
 	for(int i = 0; i < mBoidCount; ++i)
-		mScene->GetRegistery()->UpdateRendererComponent(i);
+		mScene->GetRegistery()->UpdateSpriteComponent(i);
 
 	if (QueryButton(keyboard))
 	{
 		APP_TRACE("Disconnecting from server....");
 		if (mScene->GetClient()->Disconnect())
 		{
+			mHasAssets = false;
 			delete mScene->GetClient();
 			mScene->TransitionState("menu");
 		}
@@ -153,12 +153,20 @@ void HostState::InitUI()
 	mLivesCount.GetText().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition() + sf::Vector2f(16.f, 16.f));
 }
 
-void HostState::InitShark()
+void HostState::GenerateClientAssets()
 {
-	mShark = Entity(mScene, "shark");
-	mShark.GetRenderer().graphics.setFillColor(sf::Color::Red);
-	mShark.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
-	mShark.GetTransform().position = sf::Vector2f(rand() % 1000 + 1, rand() % 1000 + 1);
+	//Will wait until it has a valid pack of assets.
+	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromServer();
+
+	if (assets.count > 0)
+	{
+		mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
+		mShark = Entity(mScene, "shark", &mSwordFishTexture);
+		mShark.GetRenderer().bShouldRenderGFX = false;
+		mShark.GetRenderer().sprite.setScale({4.0f, 4.0f});
+		mShark.GetTransform().scale = { 4.0f, 4.0f };
+		mHasAssets = true;
+	}
 }
 
 inline void HostState::Seperation(const float deltaTime)
@@ -216,20 +224,23 @@ inline void HostState::Cohesion(const float deltaTime)
 	}
 }
 
-Boid::Boid(Scene* scene, std::string tag)
+Boid::Boid(Scene* scene, std::string tag, sf::Texture* texture)
 {
-	mEntity = Entity(scene, tag);
-	mEntity.GetRenderer().graphics.setSize(sf::Vector2f(32.0f, 32.0f));
-	mEntity.GetRenderer().graphics.setFillColor(sf::Color::Green);
+	mEntity = Entity(scene, tag, texture);
 	float xPos = rand() % 1000 + 1, yPos = rand() % 1000 + 1;
-	mEntity.GetRenderer().graphics.setPosition(xPos, yPos);
-	mEntity.GetTransform().position = sf::Vector2f(xPos, yPos);
+	mEntity.GetRenderer().bShouldRenderGFX = false;
+	mEntity.GetRenderer().graphics.setSize({32.f,32.f});
+	mEntity.GetRenderer().sprite.setScale(2.0f, 2.0f);
+	mEntity.GetTransform().position = { xPos, yPos };
+	mEntity.GetTransform().scale = { 2.0f, 2.0f };
 }
 
 void Flock::CreateFlock(Scene* scene, sf::Uint32 count)
 {
+	//Create fish assets.
+	mFishTexture.loadFromFile("Assets/fishGfx/fish.png");
 	for (sf::Uint32 i = 0; i < count; ++i)
 	{
-		mBoids.push_back(Boid(scene, "B" + std::to_string(i)));
+		mBoids.push_back(Boid(scene, "B" + std::to_string(i), &mFishTexture));
 	}
 }

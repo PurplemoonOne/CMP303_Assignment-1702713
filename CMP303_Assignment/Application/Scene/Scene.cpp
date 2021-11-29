@@ -7,16 +7,14 @@
 #include "Scene.h"
 #include <iostream>
 
-
-//Custom sort functor for sorting packets into ID order.
-class GamePacketIDSort
+struct Compare
 {
-public:
-	inline bool operator()(const GameData& p1, const GameData& p2, int a, int b)
+	inline bool operator() (const GameData& p1, const GameData& p2)
 	{
-		return (p1.objectIDs[a] < p2.objectIDs[b]);
+		return p1.time < p2.time;
 	}
 };
+
 
 Scene* Scene::mContext = nullptr;
 
@@ -105,9 +103,9 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 
 void Scene::Clean()
 {
+	mClient->Disconnect();
 	//Clear the registery.
 	mActiveState->OnDetach();
-
 	//Set app to not update to avoid array access errors.
 	mActiveState->SetShouldUpdate(false);
 }
@@ -123,6 +121,13 @@ void Scene::HostNetworking(const float appElapsedTime)
 	//Host sends data about boid.
 	sf::Uint32 boidCount = static_cast<HostState*>(mActiveState)->GetBoidCount();
 
+	bool hasAssets = static_cast<HostState*>(mActiveState)->HasAssets();
+
+	if (!hasAssets)
+	{
+		static_cast<HostState*>(mActiveState)->GenerateClientAssets();
+	}
+
 	if (mNetworkTickRate > mTickUpdateThreshold)
 	{
 		mNetworkTickRate = 0.f;
@@ -137,25 +142,27 @@ void Scene::HostNetworking(const float appElapsedTime)
 	}
 	mClient->RecievePacket();
 
-
-	if (mClient->GetGameData().size() >= 2)
+	if (hasAssets)
 	{
-		//Obtain the predicted posistion. @note The array of positions for the shark is size '1' hence index '0' is passed.
-		sf::Vector2f predictedPosition = LinearPrediction(mClient->GetGameData().at(0), mClient->GetGameData().at(1), 0);
-
-		predictedPosition = 
+		if (mClient->GetGameData().size() >= 2)
 		{
-			//Linearly interpolate between the last position and new position by 60%
-			lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.6f),
-			lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.6f)
-		};
+			//Obtain the predicted posistion. @note The array of positions for the shark is size '1' hence index '0' is passed.
+			sf::Vector2f predictedPosition = LinearPrediction(mClient->GetGameData().at(0), mClient->GetGameData().at(1), 0);
 
-		mRegistery.GetTransformComponent("shark").position = predictedPosition;
-		//Update the new position.
-		mRegistery.UpdateRendererComponent("shark");
+			predictedPosition =
+			{
+				//Linearly interpolate between the last position and new position by 60%
+				lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.6f),
+				lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.6f)
+			};
 
-		mClient->GetGameData().clear();
-		mClient->GetGameData().resize(0);
+			mRegistery.GetTransformComponent("shark").position = predictedPosition;
+			//Update the new position.
+			mRegistery.UpdateSpriteComponent("shark");
+
+			mClient->GetGameData().clear();
+			mClient->GetGameData().resize(0);
+		}
 	}
 }
 
@@ -185,17 +192,24 @@ void Scene::ClientNetworking(const float appElapsedTime)
 	//If the client has the hosts assets....
 	if (hasAssets)
 	{
+		//Get a reference to the game data.
+		std::vector<GameData>& gameDataRef = mClient->GetGameData();
+
 		//For linear we need at least two packets of data to determine position.
-		//After (recieving 2 * numberOfEntities) we can begin to predict new positions.
-		if (mClient->GetGameData().size() >= 2)
+		if (gameDataRef.size() >= 3)
 		{
+			
+			std::sort(gameDataRef.begin(), gameDataRef.end(), Compare());
 			
 			//Obtain the predicted posistion.
 			sf::Vector2f predictedPosition;
-			for (int i = 0; i < 64; ++i)
+
+			//For each boid run prediction.
+			for (int i = 0; i < boidCount; ++i)
 			{
 				//Predict position
-				predictedPosition = LinearPrediction(mClient->GetGameData().at(0), mClient->GetGameData().at(1), i);
+				predictedPosition = LinearPrediction(gameDataRef.at(0), gameDataRef.at(1), i);
+
 				//Interpolate current position
 				predictedPosition = 
 				{
@@ -204,13 +218,18 @@ void Scene::ClientNetworking(const float appElapsedTime)
 				};
 				//Update the new position.
 				mRegistery.GetTransformComponent(i).position = predictedPosition;
-				mRegistery.UpdateRendererComponent(i);
+				mRegistery.UpdateSpriteComponent(i);
 			}
 
 
 			// Clear messages.
-			mClient->GetGameData().clear();
-			mClient->GetGameData().resize(0);
+			for (auto& data : gameDataRef)
+			{
+				//Remove heap allocated data.
+				data.DeleteData();
+			}
+
+			gameDataRef.resize(0);
 		}
 	}
 }
@@ -222,7 +241,11 @@ inline sf::Vector2f Scene::LinearPrediction(const GameData& messageA, const Game
 	float vX = (messageB.x[index] - messageA.x[index]) / dt;
 	float vY = (messageB.y[index] - messageA.y[index]) / dt;
 
-	return { messageB.x[index] + vX * dt, messageB.y[index] + vY * dt };
+	return 
+	{
+		messageB.x[index] + vX * dt,
+		messageB.y[index] + vY * dt 
+	};
 }
 
 inline sf::Vector2f Scene::QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, int index)

@@ -5,8 +5,7 @@
 
 enum class ClientPrivelage
 {
-	None = 0,
-	Host,
+	Host = 0,
 	Client
 };
 
@@ -48,6 +47,7 @@ struct GameData : public BaseData
 typedef unsigned short int AssetType;
 typedef unsigned short int AssetCount;
 
+
 struct ConnectionData : public BaseData
 {
 	sf::Uint8 privelage;
@@ -69,6 +69,42 @@ struct DisconnectPCKT : public BaseData
 	sf::String message;
 	sf::Uint32 id;
 	sf::Uint32 quit = 0;
+};
+
+class GameplayPacket : public sf::Packet
+{
+public:
+
+	// @brief Overrides sf::Packets call back methods.
+	// @note Called before sf::Socket.send(...)
+	virtual const void* onSend(size_t& size) override
+	{
+		const void* srcData = getData();
+		size_t srcSize = getDataSize();
+		return Encrypt(srcData, srcSize, size);
+	}
+
+	// @brief Overrides sf::Packets call back methods.
+	// @note Called after sf::Socket.receive(...)
+	virtual void onReceive(const void* data, size_t size) override
+	{
+		size_t dstSize;
+		const void* dstData = Decrypt(data, size, dstSize);
+		append(dstData, dstSize);
+	}
+private:
+
+	// @brief Simple encryption function. Used to keep sensitive data safe.
+	const void* Encrypt(const void* data, size_t srcSize, size_t& size)
+	{
+		return data;
+	}
+
+	// @brief Simple decrypiton function.
+	const void* Decrypt(const void* data, size_t size, size_t& dstSize)
+	{
+		return data;
+	}
 };
 
 
