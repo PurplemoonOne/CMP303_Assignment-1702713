@@ -5,12 +5,12 @@
 class Client
 {
 public:
-	Client();
+	Client(sf::Vector2f windowMaxBoundaries);
 	Client(const Client&) = default;
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(std::vector<sf::Vector2f> positions,const float appElapsedTime);
+	void SendGamePacket(std::vector<sf::Vector2f>& positions,const float appElapsedTime);
 
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
@@ -27,9 +27,9 @@ public:
 	bool Disconnect();
 
 	std::vector<GameData>& GetGameData() { return mGameData; }
-
 	const sf::Uint32 GetPeerCount() const { return mPeers.size(); }
-
+	const sf::Vector2f GetPredictedPosition() const { return mPredictedPositions.back(); }
+	
 public:
 	/**		Getters	& Setters	**/
 	const sf::UdpSocket& GetUDPSendSocket() const { return mUDPSendSocket; }
@@ -68,8 +68,11 @@ private:
 	// @brief An array holding game updates.
 	std::vector<GameData> mGameData;
 
-	// @brief A variable to hold the most up to date latency value.
-	float mLatency;
-	// @brief A variable to hold the average jitter based on the last N messages.
-	float mJitter;
+	// @brief Predicted Position from client.
+	std::vector<sf::Vector2f> mPredictedPositions;
+
+	// @note Some data to keep track of the valid number of data.
+
+	sf::Uint32 mAssetCount;
+	sf::Vector2f mWindowMaxBoundary;
 };

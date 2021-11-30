@@ -83,10 +83,9 @@ sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
 }
 
 
-Client::Client()
+Client::Client(sf::Vector2f windowMaxBoundaries)
 	:
-	mJitter(0.f),
-	mLatency(0.f)
+	mWindowMaxBoundary(windowMaxBoundaries)
 {
 	// Fetch the machines IP Address. 
 	mIPAdress = sf::IpAddress::getLocalAddress();
@@ -161,7 +160,7 @@ void Client::ConnectToServer()
 	}
 }
 
-void Client::SendGamePacket(std::vector<sf::Vector2f> positions, const float appElapsedTime)
+void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, const float appElapsedTime)
 {
 	GameData data;
 	//Initialise the buffer.
@@ -183,6 +182,7 @@ void Client::SendGamePacket(std::vector<sf::Vector2f> positions, const float app
 		data.y[i] = positions[i].y;
 		data.objectIDs[i] = i;
 	}
+
 
 	data.time = appElapsedTime;
 	data.peerUdpRecvPort = mUDPRecvPort;
@@ -252,8 +252,8 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.privelage = 1;
 		data.count = 1;
 		data.type = 0;
-		data.sizeX = 128.0f;
-		data.sizeY = 128.0f;
+		data.sizeX = assetSize.x;
+		data.sizeY = assetSize.x;
 		data.peerUdpRecvPort = mUDPRecvPort;
 
 		if (!(packet << data))
@@ -294,6 +294,8 @@ ConnectionData& Client::RecieveAssetsDescFromServer()
 		}
 		else
 		{
+			mAssetCount = connData.count;
+
 			if (std::find(mPeers.begin(), mPeers.end(), connData.peerUdpRecvPort) == mPeers.end())
 			{
 				mPeers.push_back(connData.peerUdpRecvPort);
@@ -323,38 +325,68 @@ void Client::RecievePacket()
 			}
 			else 
 			{
-				GameData data;
-				if (!(packet >> data))
+				GameData recvData;
+				if (!(packet >> recvData))
 				{
 					APP_ERROR("Could not unpack game data!");
 				}
 				else
 				{
-					//if (std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
-					//{
-					//	mPeers.push_back(data.peerUdpRecvPort);
-					//	APP_TRACE("Added a new valid peer.");
-					//}
 	
-					//Check for packet duplication...
-				/*	if (std::find(mGameData.begin(), mGameData.end(), data.time) == mGameData.end())
+					bool invalid = false;
+					//Check for tempering....
+
+					if (recvData.arraySize != mAssetCount)
 					{
-						APP_WARNING("Duplicate packet recieved!");
+						APP_WARNING("Packet tampered! Invalid array size! Discarding data...");
+						invalid = true;
 					}
-					else
+
+					for (auto& peerPort : mPeers)
 					{
-					}*/
-						//Otherwise we don't have this packet so store it.
-						APP_TRACE("Received packet!");
-						mGameData.push_back(data);
+						if (recvData.peerUdpRecvPort != peerPort)
+						{
+							APP_WARNING("Packet tampered! Invalid port number! Discarding data...");
+							invalid = true;
+						}
+					}
+
+					for (int i = 0; i < mAssetCount; ++i)
+					{
+						bool validateX = (recvData.x[i] < 0.f || recvData.x[i] > mWindowMaxBoundary.x);
+						bool validateY = (recvData.y[i] < 0.f || recvData.y[i] > mWindowMaxBoundary.y);
+						bool validID = (recvData.objectIDs[i] > i || recvData.objectIDs[i] < i);
+						if (validateX || validateY || validID)
+						{
+							APP_WARNING("Packet tampered! Invalid position and/or ID! Discarding data...");
+							invalid = true;
+						}
+					}
 					
+					//Check for packet duplication...
+					for (auto& storeData : mGameData)
+					{
+						if (storeData.time == recvData.time)
+						{
+							APP_WARNING("Duplicate packet recieved!");
+							invalid = true;
+						}
+					}
+
+					//Finally, if passed all conditions push data back onto the 
+					if(!invalid)
+					{
+						//Otherwise we don't have this packet so store it.
+						APP_TRACE("Received a valid packet!");
+						mGameData.push_back(recvData);
+					}
 				}
 			}
 		}
 	}
 	else
 	{
-		APP_TRACE("Wait time out..");
+		APP_TRACE("Wait time out...");
 	}
 }
 

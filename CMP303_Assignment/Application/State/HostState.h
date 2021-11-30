@@ -10,7 +10,7 @@ class Boid
 {
 public:
 	Boid() = default;
-	Boid(Scene* scene, std::string tag, sf::Texture* texture);
+	Boid(Scene* scene, std::string tag, sf::Texture* texture, sf::Uint32 index);
 	Boid(const Boid&) = default;
 	~Boid() = default;
 
@@ -52,21 +52,31 @@ private:
 	
 	bool QueryButton(Keyboard* keyboard);
 	void InitHomeButton();
-	void InitUI();
+	void InitBackdrop();
 private:
 	//Gameplay
 	Flock mFlock;
 	Entity mShark;
+	sf::Texture mSwordFishTexture;
 
 	//UI
 	Entity mHomeButton;
-	Entity mLives;
-	Entity mLivesCount;
+	sf::Texture mHomeButtonTexture;
+	sf::Texture mHomeButtonPressTexture;
 
+	//Background
+	Entity mBackdrop;
+	Entity mMiddrop;
+	sf::Texture mBackdropTexture;
+	sf::Texture mMiddropTexture;
+
+	//Misc
 	sf::Vector2f mScreenDimensions;
 	sf::Uint32 mBoidCount = 0;
+
+	//Network
 	bool mHasAssets = false;
-	sf::Texture mSwordFishTexture;
+
 private:
 	// @brief Simple functions to calculate the rules of a boid.
 	

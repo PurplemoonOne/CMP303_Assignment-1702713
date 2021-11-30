@@ -1,7 +1,6 @@
 #pragma once
 #include <SFML\Network.hpp>
 #include "../Log/Log.h"
-#include <chrono>
 
 enum class ClientPrivelage
 {
@@ -9,8 +8,6 @@ enum class ClientPrivelage
 	Client
 };
 
-typedef std::chrono::system_clock::time_point Time;
-typedef std::chrono::system_clock Clock;
 
 // @brief Base packet for all data sent/recieved from the server.
 struct BaseData
@@ -41,7 +38,6 @@ struct GameData : public BaseData
 	sf::Uint32* objectIDs; 
 	float* x;
 	float* y;
-	
 };
 
 typedef unsigned short int AssetType;

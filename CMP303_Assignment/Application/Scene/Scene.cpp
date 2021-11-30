@@ -21,13 +21,15 @@ Scene* Scene::mContext = nullptr;
 Scene::Scene(sf::RenderWindow* window)
 	:
 	mActiveState(nullptr),
-	mTickUpdateThreshold(0.01f)
+	mTickUpdateThreshold((1.0f / 64.0f)),
+	mLatency(0.f),
+	mJitter(0.f)
 {
 	if (mContext != nullptr)
 		ASSERT(!mContext, "Only one application context can exist at once!");
 
 	mContext = this;
-
+	mWindowMaxBoundaries = (sf::Vector2f)window->getSize();
 	//Add States
 	mStates["host"] = new HostState((sf::Vector2f)window->getSize());
 	mStates["client"] = new ClientState((sf::Vector2f)window->getSize());
@@ -37,6 +39,7 @@ Scene::Scene(sf::RenderWindow* window)
 	mRenderer = Renderer(window);
 
 	TransitionState("menu");
+
 }
 
 Scene::~Scene()
@@ -87,14 +90,15 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 		if (mActiveState != nullptr)
 			mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
 
+
 		//Host code.
 		if (mActiveState == mStates["host"])
 		{
-			HostNetworking(appElapsedTime);
+			HostNetworking(time, appElapsedTime);
 		}
 		else if (mActiveState == mStates["client"])
 		{
-			ClientNetworking(appElapsedTime);
+			ClientNetworking(time, appElapsedTime);
 		}
 
 		mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
@@ -103,7 +107,10 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 
 void Scene::Clean()
 {
-	mClient->Disconnect();
+	if (mClient)
+	{
+		mClient->Disconnect();
+	}
 	//Clear the registery.
 	mActiveState->OnDetach();
 	//Set app to not update to avoid array access errors.
@@ -112,11 +119,11 @@ void Scene::Clean()
 
 void Scene::CreateClient(ClientPrivelage privelage)
 {
-	mClient = new Client();
+	mClient = new Client(mWindowMaxBoundaries);
 	mClient->SetClientPrivelage(privelage);
 }
 
-void Scene::HostNetworking(const float appElapsedTime)
+void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 {
 	//Host sends data about boid.
 	sf::Uint32 boidCount = static_cast<HostState*>(mActiveState)->GetBoidCount();
@@ -140,33 +147,74 @@ void Scene::HostNetworking(const float appElapsedTime)
 
 		mClient->SendGamePacket(positions, appElapsedTime);
 	}
+	
+	//Recieve packets from the client.
 	mClient->RecievePacket();
 
 	if (hasAssets)
 	{
-		if (mClient->GetGameData().size() >= 2)
+		//Get a reference to the game data.
+		std::vector<GameData>& gameDataRef = mClient->GetGameData();
+
+		//If we have recieved more than 3 updates...
+		if (gameDataRef.size() >= 3)
 		{
-			//Obtain the predicted posistion. @note The array of positions for the shark is size '1' hence index '0' is passed.
-			sf::Vector2f predictedPosition = LinearPrediction(mClient->GetGameData().at(0), mClient->GetGameData().at(1), 0);
+			static sf::Vector2f predictedPosition;
 
-			predictedPosition =
+			//Our lerp from last tick is complete.
+			if (mLerpComplete)
 			{
-				//Linearly interpolate between the last position and new position by 60%
-				lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.6f),
-				lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.6f)
-			};
+				//Set it back to false.
+				mLerpComplete = false;
 
-			mRegistery.GetTransformComponent("shark").position = predictedPosition;
-			//Update the new position.
-			mRegistery.UpdateSpriteComponent("shark");
+				//Sort our data into order with respect to time sent.
+				std::sort(gameDataRef.begin(), gameDataRef.end(), Compare());
 
-			mClient->GetGameData().clear();
-			mClient->GetGameData().resize(0);
+				//Calculate the latency for this 'Tick()'.
+				mLatency = gameDataRef.at(gameDataRef.size() - 2).time - gameDataRef.at(gameDataRef.size() - 1).time;
+
+				//Run our linear prediction.
+				predictedPosition = LinearPrediction(gameDataRef.at(gameDataRef.size() - 1), gameDataRef.at(gameDataRef.size() - 2), 0);
+			}
+			else
+			{
+				//Gradually increase the position of each object to the newly predicted.
+				if (mLerp < mLerpThreshold)
+				{
+					mLerp += deltaTime * mLerpSpeed;
+
+					predictedPosition =
+					{
+						//Linearly interpolate between the last position and new position by 60%
+						Lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.5f),
+						Lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.5f)
+					};
+
+					mRegistery.GetTransformComponent("shark").position = predictedPosition;
+					//Update the new position.
+					mRegistery.UpdateSpriteComponent("shark");
+				}
+				else
+				{
+					predictedPosition = { 0,0 };
+					// Clear messages.
+					for (auto& data : gameDataRef)
+					{
+						//Remove heap allocated data.
+						data.DeleteData();
+					}
+					mClient->GetGameData().clear();
+					mClient->GetGameData().resize(0);
+					mLerpComplete = true;
+					mLerp = 0.0f;
+				}
+			}
 		}
 	}
+	
 }
 
-void Scene::ClientNetworking(const float appElapsedTime)
+void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 {
 	//Client code	
 	bool hasAssets = static_cast<ClientState*>(mActiveState)->HasAssets();
@@ -198,48 +246,77 @@ void Scene::ClientNetworking(const float appElapsedTime)
 		//For linear we need at least two packets of data to determine position.
 		if (gameDataRef.size() >= 3)
 		{
-			
-			std::sort(gameDataRef.begin(), gameDataRef.end(), Compare());
-			
 			//Obtain the predicted posistion.
-			sf::Vector2f predictedPosition;
+			static std::vector<sf::Vector2f> predictedPosition;
 
-			//For each boid run prediction.
-			for (int i = 0; i < boidCount; ++i)
+			//If our last lerp is complete...
+			if (mLerpComplete)
 			{
-				//Predict position
-				predictedPosition = LinearPrediction(gameDataRef.at(0), gameDataRef.at(1), i);
+				//Set it back to false.
+				mLerpComplete = false;
 
-				//Interpolate current position
-				predictedPosition = 
+				//Sort our data into order of time sent.
+				std::sort(gameDataRef.begin(), gameDataRef.end(), Compare());
+
+				//Calculate the latency for this 'Tick()'.
+				mLatency = gameDataRef.at(gameDataRef.size() - 2).time - gameDataRef.at(gameDataRef.size() - 1).time;
+
+				//For each boid run prediction.
+				for (int i = 0; i < boidCount; ++i)
 				{
-						lerp(mRegistery.GetTransformComponent(i).position.x, predictedPosition.x, 0.6f),
-						lerp(mRegistery.GetTransformComponent(i).position.y, predictedPosition.y, 0.6f)
-				};
-				//Update the new position.
-				mRegistery.GetTransformComponent(i).position = predictedPosition;
-				mRegistery.UpdateSpriteComponent(i);
+					//Predict position for each boid.
+					predictedPosition.push_back(LinearPrediction(gameDataRef.at(gameDataRef.size() - 1), gameDataRef.at(gameDataRef.size() - 2), i));
+				}
 			}
-
-
-			// Clear messages.
-			for (auto& data : gameDataRef)
+			else
 			{
-				//Remove heap allocated data.
-				data.DeleteData();
-			}
+				//Gradually increase our current position to the newly predicted one.
+				if (mLerp < mLerpThreshold)
+				{
+					mLerp += deltaTime * mLerpSpeed;
 
-			gameDataRef.resize(0);
+					for (int i = 0; i < boidCount; ++i)
+					{
+						//Interpolate current position
+						predictedPosition.at(i) =
+						{
+							Lerp(mRegistery.GetTransformComponent(i).position.x, predictedPosition.at(i).x, 0.5f),
+							Lerp(mRegistery.GetTransformComponent(i).position.y, predictedPosition.at(i).y, 0.5f)
+						};
+
+						//Update the new position.
+						mRegistery.GetTransformComponent(i).position = predictedPosition.at(i);
+						mRegistery.UpdateSpriteComponent(i);
+					}
+				}
+				else
+				{
+					//Reset our variables.
+					predictedPosition.clear();
+					predictedPosition.resize(0);
+					mLerp = 0.f;
+					mLerpComplete = true;
+					// Clear messages.
+					for (auto& data : gameDataRef)
+					{
+						//Remove heap allocated data.
+						data.DeleteData();
+					}
+
+					gameDataRef.resize(0);
+				}
+			}
 		}
 	}
+	
 }
 
 inline sf::Vector2f Scene::LinearPrediction(const GameData& messageA, const GameData& messageB, int index)
 {
-	float dt = messageB.time - messageA.time;
+	float dt = messageA.time - messageB.time;
 
-	float vX = (messageB.x[index] - messageA.x[index]) / dt;
-	float vY = (messageB.y[index] - messageA.y[index]) / dt;
+	float vX = (messageA.x[index] - messageB.x[index]) / dt;
+	float vY = (messageA.y[index] - messageB.y[index]) / dt;
 
 	return 
 	{
@@ -263,3 +340,7 @@ inline sf::Vector2f Scene::QuadraticPrediction(const GameData& messageA, const G
 	return { *messageA.x + vX * dtAB + 0.5f * aX * dtBC, *messageA.y + vY * dtAB + 0.5f * aY * dtBC };
 }
 
+const float Scene::Lerp(float a, float b, float t)
+{
+	return (a + t * (b - a));
+}

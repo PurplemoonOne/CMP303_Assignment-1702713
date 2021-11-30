@@ -7,7 +7,6 @@ class State;
 class Keyboard;
 class Gamepad;
 
-#define lerp(a,b,t) a * (1 - t) + b * t
 
 class Scene
 {
@@ -32,12 +31,14 @@ private:
 	float mNetworkTickRate;
 	float mTickUpdateThreshold;
 
-	void HostNetworking(const float appElapsedTime);
-	void ClientNetworking(const float appElapsedTime);
+	void HostNetworking(const float deltaTime, const float appElapsedTime);
+	void ClientNetworking(const float deltaTime, const float appElapsedTime);
 
 	// @brief Prediction functions to smooth out desparities between client and server.
 	inline sf::Vector2f LinearPrediction(const GameData& messageA, const GameData& messageB, int index);
 	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, int index);
+	const float Lerp(float a, float b, float t);
+
 
 private:
 	Renderer mRenderer;
@@ -45,5 +46,14 @@ private:
 	State* mActiveState;
 	std::unordered_map<std::string, State*> mStates;
 	static Scene* mContext;
+
+	float mLatency;
+	float mJitter;
+	float mLerp = 0.f;
+	float mLerpSpeed = 100.0f;
+	float mLerpThreshold = 0.1f;
+	bool mLerpComplete = true;
+
+	sf::Vector2f mWindowMaxBoundaries;
 };
 

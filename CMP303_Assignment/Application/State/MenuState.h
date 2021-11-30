@@ -13,8 +13,18 @@ public:
 	virtual void OnDetach() override;
 
 private:
-	
-	Entity mStreamButton;
-	Entity mSpectateButton;
+	void InitBackdrop();
+	//Background
+	Entity mBackdrop;
+	Entity mMiddrop;
+	sf::Texture mBackdropTexture;
+	sf::Texture mMiddropTexture;
+
+	Entity mHostButton;
+	sf::Texture mClientButtonTexture;
+	sf::Texture mClientButtonPressTexture;
+	Entity mClientButton;
+	sf::Texture mHostButtonTexture;
+	sf::Texture mHostButtonPressTexture;
 	sf::Vector2f mScreenDimensions;
 };

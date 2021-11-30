@@ -15,22 +15,28 @@ HostState::~HostState()
 
 void HostState::OnStart()
 {
+	//Reserve space.
+	mScene->GetRegistery()->ReserveBuffer(80);
+
 	//Create the flock.
 	mFlock.CreateFlock(mScene, (mBoidCount = 64));
 
+	//Create graphics.
 	InitHomeButton();
+	InitBackdrop();
 
-	sf::Vector2f size = mFlock.mBoids.back().mEntity.GetRenderer().graphics.getSize();
-
+	//Connect to the server.
 	mScene->GetClient()->ConnectToServer();
-
-	mScene->GetClient()->SendConnectionInformation(1, mBoidCount, size);
+	//Send asset description.
+	mScene->GetClient()->SendConnectionInformation(1, mBoidCount, {2.0f, 2.0f});
 }
 
 void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
 {
+	//Fetch mouse coordinates.
 	sf::Vector2f mouseCoordinates = sf::Vector2f(keyboard->MouseX(), keyboard->MouseY());
 	
+	//Run boid algorithm.
 	Seperation(deltaTime);
 	for (auto& boid : mFlock.mBoids)
 	{
@@ -44,9 +50,12 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	Cohesion(deltaTime);
 
 	//Update the position of the sprites.
-	for(int i = 0; i < mBoidCount; ++i)
+	for (int i = 0; i < mBoidCount; ++i)
+	{
 		mScene->GetRegistery()->UpdateSpriteComponent(i);
+	}
 
+	//Check if we've pressed the home button.
 	if (QueryButton(keyboard))
 	{
 		APP_TRACE("Disconnecting from server....");
@@ -85,7 +94,9 @@ bool HostState::QueryButton(Keyboard* keyboard)
 
 	if ((mouseX > homeButtonC00.x && mouseX < homeButtonC11.x) && (mouseY > homeButtonC00.y && mouseY < homeButtonC11.y))
 	{
-		mHomeButton.GetRenderer().graphics.setFillColor(sf::Color::Green);
+		mHomeButton.GetRenderer().sprite.setTexture(mHomeButtonPressTexture);
+		mHomeButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 245));
+		mHomeButton.GetRenderer().sprite.setScale(0.35f, 0.35f);
 		if (keyboard->MouseLeftButtonDown())
 		{
 			bButtonPressed = true;
@@ -93,7 +104,9 @@ bool HostState::QueryButton(Keyboard* keyboard)
 	}
 	else
 	{
-		mHomeButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
+		mHomeButton.GetRenderer().sprite.setTexture(mHomeButtonTexture);
+		mHomeButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 100));
+		mHomeButton.GetRenderer().sprite.setScale(0.25f, 0.25f);
 		bButtonPressed = false;
 	}
 
@@ -102,7 +115,9 @@ bool HostState::QueryButton(Keyboard* keyboard)
 
 void HostState::InitHomeButton()
 {
-	mHomeButton = Entity(mScene, "HomeButton");
+	mHomeButtonTexture.loadFromFile("Assets/home.png");
+	mHomeButtonPressTexture.loadFromFile("Assets/homeC.png");
+	mHomeButton = Entity(mScene, "HomeButton", &mHomeButtonTexture, 66);
 
 	mHomeButton.GetText().font.loadFromFile("Assets/font.ttf");
 
@@ -115,42 +130,37 @@ void HostState::InitHomeButton()
 	mHomeButton.GetText().text.setLetterSpacing(1.5f);
 	mHomeButton.GetText().text.setString("Home");
 
-	mHomeButton.GetRenderer().graphics.setFillColor(sf::Color::Black);
-	mHomeButton.GetRenderer().graphics.setPosition(mScreenDimensions * 0.8f);
-	mHomeButton.GetRenderer().graphics.setSize(sf::Vector2f(128.0f, 128.0f));
+	mHomeButton.GetRenderer().sprite.setPosition(mScreenDimensions * 0.9f);
+	mHomeButton.GetRenderer().sprite.setTexture(mHomeButtonTexture);
+	mHomeButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 55));
+	mHomeButton.GetRenderer().sprite.setScale(0.25f, 0.25f);
+	mHomeButton.GetRenderer().sprite.setOrigin(0, 0);
+	//Invisible square
+	mHomeButton.GetRenderer().graphics.setSize({64.0,64.0});
+	mHomeButton.GetRenderer().graphics.setFillColor(sf::Color(255, 255, 255, 0));
+	mHomeButton.GetRenderer().graphics.setPosition(mScreenDimensions * 0.9f);
 	mHomeButton.GetRenderer().graphics.setOrigin(0, 0);
 	mHomeButton.GetText().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition());
 }
 
-void HostState::InitUI()
+void HostState::InitBackdrop()
 {
-	//Lives text.
-	mLives = Entity(mScene, "LivesText");
-	mLives.GetText().text.setCharacterSize(14);
-	mLives.GetText().text.setFillColor(sf::Color::White);
-	mLives.GetText().text.setOutlineColor(sf::Color::Black);
-	mLives.GetText().text.setOutlineThickness(1.2f);
-	mLives.GetText().text.setLetterSpacing(1.5f);
-	mLives.GetText().text.setString("Lives : ");
+	//Load textures
+	mBackdropTexture.loadFromFile("Assets/background.png");
+	mMiddropTexture.loadFromFile("Assets/midground.png");
 
-	mLives.GetRenderer().graphics.setFillColor(sf::Color::Black);
-	mLives.GetRenderer().graphics.setPosition(128.f, 128.f);
-	mLives.GetRenderer().graphics.setSize(sf::Vector2f(256.0f, 32.0f));
-	mLives.GetText().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition() + sf::Vector2f(16.f, 16.f));
+	//Mid drop
+	mMiddrop = Entity(mScene, "Middrop", &mMiddropTexture, 70);
+	mMiddrop.GetRenderer().graphics.setSize({ 0, 0 });
+	mMiddrop.GetRenderer().sprite.setPosition(0, 0);
+	mMiddrop.GetRenderer().sprite.setScale({ 3,3 });
 
-	//Lives Remaining
-	mLivesCount = Entity(mScene, "LivesCount");
-	mLivesCount.GetText().text.setCharacterSize(14);
-	mLivesCount.GetText().text.setFillColor(sf::Color::White);
-	mLivesCount.GetText().text.setOutlineColor(sf::Color::Black);
-	mLivesCount.GetText().text.setOutlineThickness(1.2f);
-	mLivesCount.GetText().text.setLetterSpacing(1.5f);
-	mLivesCount.GetText().text.setString("");
+	//Backdrop
+	mBackdrop = Entity(mScene, "Backdrop", &mBackdropTexture, 71);
+	mBackdrop.GetRenderer().graphics.setSize({ 0, 0 });
+	mBackdrop.GetRenderer().sprite.setPosition(0,0);
+	mBackdrop.GetRenderer().sprite.setScale({7,7});
 
-	mLivesCount.GetRenderer().graphics.setFillColor(sf::Color::Black);
-	mLivesCount.GetRenderer().graphics.setPosition(132.f, 128.f);
-	mLivesCount.GetRenderer().graphics.setSize(sf::Vector2f(256.0f, 32.0f));
-	mLivesCount.GetText().text.setPosition(mHomeButton.GetRenderer().graphics.getPosition() + sf::Vector2f(16.f, 16.f));
 }
 
 void HostState::GenerateClientAssets()
@@ -161,7 +171,7 @@ void HostState::GenerateClientAssets()
 	if (assets.count > 0)
 	{
 		mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
-		mShark = Entity(mScene, "shark", &mSwordFishTexture);
+		mShark = Entity(mScene, "shark", &mSwordFishTexture, 65);
 		mShark.GetRenderer().bShouldRenderGFX = false;
 		mShark.GetRenderer().sprite.setScale({4.0f, 4.0f});
 		mShark.GetTransform().scale = { 4.0f, 4.0f };
@@ -224,12 +234,12 @@ inline void HostState::Cohesion(const float deltaTime)
 	}
 }
 
-Boid::Boid(Scene* scene, std::string tag, sf::Texture* texture)
+Boid::Boid(Scene* scene, std::string tag, sf::Texture* texture, sf::Uint32 index)
 {
-	mEntity = Entity(scene, tag, texture);
+	mEntity = Entity(scene, tag, texture, index);
 	float xPos = rand() % 1000 + 1, yPos = rand() % 1000 + 1;
 	mEntity.GetRenderer().bShouldRenderGFX = false;
-	mEntity.GetRenderer().graphics.setSize({32.f,32.f});
+	mEntity.GetRenderer().graphics.setSize({0,0});
 	mEntity.GetRenderer().sprite.setScale(2.0f, 2.0f);
 	mEntity.GetTransform().position = { xPos, yPos };
 	mEntity.GetTransform().scale = { 2.0f, 2.0f };
@@ -241,6 +251,6 @@ void Flock::CreateFlock(Scene* scene, sf::Uint32 count)
 	mFishTexture.loadFromFile("Assets/fishGfx/fish.png");
 	for (sf::Uint32 i = 0; i < count; ++i)
 	{
-		mBoids.push_back(Boid(scene, "B" + std::to_string(i), &mFishTexture));
+		mBoids.push_back(Boid(scene, "B" + std::to_string(i), &mFishTexture, i));
 	}
 }

@@ -19,15 +19,28 @@ public:
 	void GenerateHostAssets();
 	const bool HasAssets() const { return mHasAssets; }
 private:
+	void InitBackdrop();
 	bool QueryButton(Keyboard* keyboard);
 	void InitHomeButton();
+
+	//Assets.
 	sf::Texture mFishTexture;
+	Entity mShark;
 	sf::Texture mSwordFishTexture;
+
+	//Background
+	Entity mBackdrop;
+	Entity mMiddrop;
+	sf::Texture mBackdropTexture;
+	sf::Texture mMiddropTexture;
+
 private:
 	InputHandler inputHandler;
-	Entity mShark;
+
 	sf::Vector2f mScreenDimensions;
 	sf::Uint32 mBoidCount = 0;
 	Entity mHomeButton;
+	sf::Texture mHomeButtonTexture;
+	sf::Texture mHomeButtonPressTexture;
 	bool mHasAssets = false;
 };
