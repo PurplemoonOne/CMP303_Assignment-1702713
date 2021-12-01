@@ -6,22 +6,22 @@
 
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
-	return packet >> data.time >> data.message >> data.id >> data.quit;
+	return packet >> data.systemTime >> data.message >> data.id >> data.quit;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 {
-	return packet << data.time << data.message << data.id << data.quit;
+	return packet << data.systemTime << data.message << data.id << data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.systemTime >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.systemTime << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)

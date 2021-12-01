@@ -39,6 +39,16 @@ private:
 	inline sf::Vector2f QuadraticPrediction(const GameData& messageA, const GameData& messageB, const GameData& messageC, int index);
 	const float Lerp(float a, float b, float t);
 
+	// @brief Initialises the latency graphic.
+	void InitLatencyGraphic();
+	bool mInitLatencyGraphic;
+
+	// @brief track how long it's been since last tick.
+	double mTimeElapsedSinceLastUpdate = 0.0;
+	// @brief Current system time.
+	double mCurrentTimeOnUpdateNetwork = 0.0;
+	// @brief Last system time on update.
+	double mLastTimeOnUpdateNetwork = 0.0;
 
 private:
 	Renderer mRenderer;
@@ -47,8 +57,6 @@ private:
 	std::unordered_map<std::string, State*> mStates;
 	static Scene* mContext;
 
-	float mLatency;
-	float mJitter;
 	float mLerp = 0.f;
 	float mLerpSpeed = 100.0f;
 	float mLerpThreshold = 0.1f;

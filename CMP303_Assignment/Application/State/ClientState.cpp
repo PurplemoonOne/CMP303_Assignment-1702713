@@ -31,6 +31,7 @@ void ClientState::OnStart()
 	//Create shark.
 	mShark = Entity(mScene, "shark", &mSwordFishTexture, 65);
 	mShark.GetRenderer().sprite.setScale({ 4.0f, 4.0f });
+	mShark.GetRenderer().sprite.setOrigin({ 16.0f, 16.0f });
 	mShark.GetRenderer().bShouldRenderGFX = false;
 	mShark.GetTransform().scale = { 4.0f, 4.0f };
 
@@ -41,15 +42,58 @@ void ClientState::OnStart()
 
 void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
 {
-	//Execute the queued event.
-	Event* event = inputHandler.HandleKeyboard(keyboard);
+	//Fetch mouse coordinates.
+	sf::Vector2f mouseCoordinates = sf::Vector2f(keyboard->MouseX(), keyboard->MouseY());
 
-	//Check for an input event.
-	if (event)
+	if ((mouseCoordinates.x > mScreenDimensions.x || mouseCoordinates.x < 0.f) 
+		||
+		(mouseCoordinates.y > mScreenDimensions.y || mScreenDimensions.y < 0.f))
 	{
-		//If valid update *our* entity.
-		event->Execute(deltaTime, &mShark, keyboard->MouseX(), keyboard->MouseY());
+		mUpdatePosition = false;
 	}
+	else
+	{
+		mUpdatePosition = true;
+	}
+
+	if (mUpdatePosition)
+	{
+		sf::Vector2f& sharkPos = mScene->GetRegistery()->GetTransformComponent("shark").position;
+		sf::Vector2f& sharkScale = mScene->GetRegistery()->GetTransformComponent("shark").scale;
+		float& sharkRotation = mScene->GetRegistery()->GetTransformComponent("shark").rotation;
+
+		sf::Vector2f align = mouseCoordinates - sharkPos;
+
+		//Calculate new rotation.
+		float angle = degrees(atan2f(align.x, align.y)) - 180.0f;
+
+		//Update shark's position.
+		if (Magnitude(align) > 1.0f)
+		{
+			sharkPos += Normalise(align) * 250.0f * deltaTime;
+		}
+		//Update shark's angle.
+		sharkRotation = angle;
+		
+		//flip sprite
+		if ((angle > 270.f && angle < 360.f))
+		{
+			sharkScale = { 4.f, 4.f };
+		}
+		if ((angle > 360.0f && angle < 90.0f))
+		{
+			sharkScale = { 4.f, 4.f };
+		}
+		if ((angle > 90.0f && angle < 180.0f))
+		{
+			sharkScale = { -4.0f, -4.0f };
+		}
+		if ((angle > 180.0f) && (angle < 270.0f))
+		{
+			sharkScale = { -4.f, 4.f };
+		}
+	}
+
 
 	//Update the position of the sprites.
 	mScene->GetRegistery()->UpdateSpriteComponent("shark");

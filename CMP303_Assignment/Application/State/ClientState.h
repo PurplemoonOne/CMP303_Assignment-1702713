@@ -43,4 +43,39 @@ private:
 	sf::Texture mHomeButtonTexture;
 	sf::Texture mHomeButtonPressTexture;
 	bool mHasAssets = false;
+
+	bool mUpdatePosition = true;
+//Utility functions	
+
+	inline float Magnitude(sf::Vector2f vector)
+	{
+		return sqrtf((vector.x * vector.x + vector.y * vector.y));
+	}
+
+	inline sf::Vector2f Normalise(sf::Vector2f vector)
+	{
+		return vector / (Magnitude(vector));
+	}
+
+#define min(a, mi) if(a < mi) a = mi
+#define max(a, mx) if(a > mx) a = mx
+#define clamp(t, a, b) min(t, a); max(t, b)
+
+#define pi 3.14159265359f
+#define radians(a) (a * pi) / 180.f
+#define degrees(a) (a * 180.0f) / pi
+
+	inline sf::Vector2f RotateVector(sf::Vector2f p0, const float alpha)
+	{
+		return
+		{
+			cosf(radians(alpha)) * p0.x - sinf(radians(alpha)) * p0.y,
+			sinf(radians(alpha)) * p0.x + cosf(radians(alpha)) * p0.y
+		};
+	}
+
+	inline const float Angle(const sf::Vector2f v1, const sf::Vector2f v2)
+	{
+		return acosf(radians(((v1.x * v2.x) + (v1.y * v2.y)) / sqrtf((v1.x * v1.x) + (v1.y * v1.y)) * sqrtf((v2.x * v2.x) + (v2.y * v2.y))));
+	}
 };

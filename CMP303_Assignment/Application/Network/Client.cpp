@@ -1,47 +1,62 @@
 #include "Client.h"
-
+#include <chrono>
 //Const data
 const sf::IpAddress SERVER_PUBLIC_IP = sf::IpAddress::getPublicAddress();
 const sf::IpAddress MACHINE_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
 
+using namespace std::chrono;
 
 sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 {
-	return packet << data.time << data.message << data.id << data.quit;
+	return packet << data.systemTime << data.message << data.id << data.quit;
 }
+
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
-	return packet >> data.time >> data.message >> data.id >> data.quit;
+	return packet >> data.systemTime >> data.message >> data.id >> data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	packet >> data.time >> data.peerUdpRecvPort >> data.arraySize;
+	packet >> data.systemTime >> data.peerUdpRecvPort >> data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
-	data.InitArray(count);
+	if (count < 256)
+	{
+		data.InitArray(count);
 
-	for (int i = 0; i < count; ++i)
-	{
-		packet >> data.objectIDs[i];
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.objectIDs[i];
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.x[i];
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.y[i];
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.rotations[i];
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.scaleX[i];
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			packet >> data.scaleY[i];
+		}
 	}
-	for (int i = 0; i < count; ++i)
-	{
-		packet >> data.x[i];
-	}
-	for (int i = 0; i < count; ++i)
-	{
-		packet >> data.y[i];
-	}
-	
-
 	return packet;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	packet << data.time << data.peerUdpRecvPort << data.arraySize;
+	packet  << data.systemTime << data.peerUdpRecvPort << data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
 
@@ -57,19 +72,30 @@ sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 	{
 		packet << data.y[i];
 	}
-
+	for (int i = 0; i < count; ++i)
+	{
+		packet << data.rotations[i];
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet << data.scaleX[i];
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		packet << data.scaleY[i];
+	}
 
 	return packet;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, ConnectionData& data)
 {
-	return packet >> data.time >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
+	return packet >> data.systemTime >> data.privelage >> data.peerUdpRecvPort >> data.ipAddress >> data.type >> data.count >> data.sizeX >> data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 {
-	return packet << data.time << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
+	return packet << data.systemTime << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
@@ -80,6 +106,16 @@ sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
 sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
 {
 	return packet >> data.udpPort;
+}
+
+sf::Packet& operator <<(sf::Packet& packet, const LatencyPacket& data)
+{
+	return packet << data.timeA << data.timeB;
+}
+
+sf::Packet& operator >>(sf::Packet& packet, LatencyPacket& data)
+{
+	return packet >> data.timeA >> data.timeB;
 }
 
 
@@ -160,19 +196,22 @@ void Client::ConnectToServer()
 	}
 }
 
-void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, const float appElapsedTime)
+void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, std::vector<float>& rotations, std::vector<std::pair<float, float>>& scales)
 {
 	GameData data;
+	bool heapAlloc = false;
 	//Initialise the buffer.
 	if (mPrivelage == ClientPrivelage::Host)
 	{
 		//Host boid positions.
 		data.InitArray(positions.size());
+		heapAlloc = true;
 	}
 	else
 	{
 		//Client position.
 		data.InitArray(1);
+		heapAlloc = true;
 	}
 
 	//Fill the buffer.
@@ -180,13 +219,19 @@ void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, const float ap
 	{
 		data.x[i] = positions[i].x;
 		data.y[i] = positions[i].y;
+		data.rotations[i] = rotations[i];
+		data.scaleX[i] = scales[i].first;
+		data.scaleY[i] = scales[i].second;
 		data.objectIDs[i] = i;
 	}
 
-
-	data.time = appElapsedTime;
 	data.peerUdpRecvPort = mUDPRecvPort;
+
+
 	sf::Packet packet;
+
+	//Track this for latency.
+	data.systemTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
 	if (!(packet << data))
 	{
@@ -210,6 +255,11 @@ void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, const float ap
 				else
 				{
 					APP_TRACE("PACKET SENT TO PORT : {0}", port);
+					if (heapAlloc)
+					{
+						//Delete local data from heap.
+						data.DeleteData();
+					}
 				}
 			}
 		}
@@ -220,7 +270,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 {
 	sf::Packet packet;
 	ConnectionData data;
-	data.time = 0.0f;
+	data.systemTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
 	if (mPrivelage == ClientPrivelage::Host)
 	{
@@ -317,7 +367,6 @@ void Client::RecievePacket()
 			//Variables to write the port and ip address of the sender.
 			sf::IpAddress ipAddress;
 			sf::Uint16 port;
-			sf::UdpSocket::Status status;
 
 			if (mUDPRecvSocket.receive(packet, ipAddress, port) != sf::UdpSocket::Done)
 			{
@@ -326,67 +375,121 @@ void Client::RecievePacket()
 			else 
 			{
 				GameData recvData;
-				if (!(packet >> recvData))
+				LatencyPacket recvLatencyData;
+				if ((packet >> recvData))
 				{
-					APP_ERROR("Could not unpack game data!");
+					APP_INFO("Recieved game update.");
+					StoreGameUpdate(recvData);
+				}
+				else if((packet >> recvLatencyData))
+				{
+					APP_INFO("Recieved our latest latency data.");
+				
+					mLatency = recvLatencyData.timeB - recvLatencyData.timeA;
+					mLatency *= 0.001; //Convert into seconds.
 				}
 				else
 				{
-	
-					bool invalid = false;
-					//Check for tempering....
-
-					if (recvData.arraySize != mAssetCount)
-					{
-						APP_WARNING("Packet tampered! Invalid array size! Discarding data...");
-						invalid = true;
-					}
-
-					for (auto& peerPort : mPeers)
-					{
-						if (recvData.peerUdpRecvPort != peerPort)
-						{
-							APP_WARNING("Packet tampered! Invalid port number! Discarding data...");
-							invalid = true;
-						}
-					}
-
-					for (int i = 0; i < mAssetCount; ++i)
-					{
-						bool validateX = (recvData.x[i] < 0.f || recvData.x[i] > mWindowMaxBoundary.x);
-						bool validateY = (recvData.y[i] < 0.f || recvData.y[i] > mWindowMaxBoundary.y);
-						bool validID = (recvData.objectIDs[i] > i || recvData.objectIDs[i] < i);
-						if (validateX || validateY || validID)
-						{
-							APP_WARNING("Packet tampered! Invalid position and/or ID! Discarding data...");
-							invalid = true;
-						}
-					}
-					
-					//Check for packet duplication...
-					for (auto& storeData : mGameData)
-					{
-						if (storeData.time == recvData.time)
-						{
-							APP_WARNING("Duplicate packet recieved!");
-							invalid = true;
-						}
-					}
-
-					//Finally, if passed all conditions push data back onto the 
-					if(!invalid)
-					{
-						//Otherwise we don't have this packet so store it.
-						APP_TRACE("Received a valid packet!");
-						mGameData.push_back(recvData);
-					}
+					APP_ERROR("Unpacking data failed, unknown data recieved.");
 				}
 			}
-		}
-	}
+		}//Not ready.
+	}//Time out.
 	else
 	{
 		APP_TRACE("Wait time out...");
+
+		if (mPeers.size() != 0)
+		{
+
+		}
+
+	}
+}
+
+void Client::StoreGameUpdate(const GameData& data)
+{
+	bool invalid = false;
+	//Check for tempering....
+	//Is there a strange asset count...?
+	if (data.arraySize != mAssetCount)
+	{
+		APP_WARNING("Packet tampered! Invalid array size! Discarding data...");
+		invalid = true;
+	}
+
+	if (!invalid)
+	{
+		//Does the port match current records of port numbers...?
+		if(std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
+		{
+			APP_WARNING("Packet tampered! Invalid port number! Discarding data...");
+			invalid = true;
+		}
+	}
+
+	if (!invalid)
+	{
+		//Is there a strange number or out of bounds...?
+		for (int i = 0; i < mAssetCount; ++i)
+		{
+			bool validateX = (data.x[i] > 0.f && data.x[i] < mWindowMaxBoundary.x);
+			bool validateY = (data.y[i] > 0.f && data.y[i] < mWindowMaxBoundary.y);
+			bool validID = (data.objectIDs[i] == i);
+			if (!(validateX && validateY && validID))
+			{
+				APP_WARNING("Packet tampered! Invalid position and/or ID! Discarding data...");
+				invalid = true;
+			}
+		}
+	}
+
+	if (!invalid)
+	{
+		//Check for packet duplication...
+		for (auto& storeData : mGameData)
+		{
+			if ((storeData.systemTime == data.systemTime))
+			{
+				APP_WARNING("Duplicate packet recieved!");
+				invalid = true;
+			}
+		}
+	}
+
+
+	//Finally, if passed all conditions push data back onto the array.
+	//Also send back latency data to connection.
+	if (!invalid)
+	{
+		//Otherwise we don't have this packet so store it.
+		APP_INFO("Received a valid packet!");
+		mGameData.push_back(data);
+
+		//Send back a latency packet to inform the other connection their current latency.
+		LatencyPacket latencyData;
+		sf::Packet latencyPacket;
+		latencyData.timeA = data.systemTime;//Time stored when sent from other connection.
+		latencyData.timeB = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();//Time now when recieved.
+
+		if (!(latencyPacket << latencyData))
+		{
+			APP_ERROR("Failed to pack latency data...");
+		}
+		else
+		{
+			sf::Uint16 returnToSenderPort = data.peerUdpRecvPort;
+			sf::IpAddress ipAddress = MACHINE_LOCAL_IP;
+			//Already have valid port number and ip address from the connection.
+			if (mUDPSendSocket.send(latencyPacket, ipAddress, returnToSenderPort) != sf::UdpSocket::Done)
+			{
+				APP_ERROR("Failed to send latency packet!");
+			}
+			else
+			{
+				APP_INFO("Sending latency data back to peer...");
+			}
+		}
 	}
 }
 
@@ -399,6 +502,7 @@ bool Client::Disconnect()
 	data.id = 0;
 	data.quit = 1;
 	data.message = " ";
+	data.systemTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
 	if (!(packet << data))
 	{
@@ -409,7 +513,9 @@ bool Client::Disconnect()
 		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
 		{
 			APP_ERROR("Could not disconnect from server gracefully......");
-			exit(-1);
+			mTCPSocket.disconnect();
+			mUDPSendSocket.unbind();
+			mUDPRecvSocket.unbind();
 		}
 		else
 		{

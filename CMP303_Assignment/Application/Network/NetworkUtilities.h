@@ -12,7 +12,7 @@ enum class ClientPrivelage
 // @brief Base packet for all data sent/recieved from the server.
 struct BaseData
 {
-	double time;
+	double systemTime;
 };
 
 // @brief Packet containing positional data of the objects.
@@ -22,6 +22,9 @@ struct GameData : public BaseData
 	{
 		x = new float[arSize];
 		y = new float[arSize];
+		rotations = new float[arSize];
+		scaleX = new float[arSize];
+		scaleY = new float[arSize];
 		objectIDs = new sf::Uint32[arSize];
 		arraySize = arSize;
 	}
@@ -30,6 +33,9 @@ struct GameData : public BaseData
 	{
 		if (x) delete x;
 		if (y) delete y;
+		if (rotations) delete rotations;
+		if (scaleX)	   delete scaleX;
+		if (scaleY)    delete scaleY;
 		if (objectIDs) delete objectIDs;
 	}
 
@@ -38,6 +44,9 @@ struct GameData : public BaseData
 	sf::Uint32* objectIDs; 
 	float* x;
 	float* y;
+	float* rotations;
+	float* scaleX;
+	float* scaleY;
 };
 
 typedef unsigned short int AssetType;
@@ -65,6 +74,12 @@ struct DisconnectPCKT : public BaseData
 	sf::String message;
 	sf::Uint32 id;
 	sf::Uint32 quit = 0;
+};
+
+struct LatencyPacket
+{
+	double timeA;
+	double timeB;
 };
 
 class GameplayPacket : public sf::Packet

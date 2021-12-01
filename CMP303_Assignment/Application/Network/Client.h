@@ -10,7 +10,7 @@ public:
 	~Client();
 
 	// @brief Send a packet to a specified connection.
-	void SendGamePacket(std::vector<sf::Vector2f>& positions,const float appElapsedTime);
+	void SendGamePacket(std::vector<sf::Vector2f>& positions, std::vector<float>& rotations, std::vector<std::pair<float, float>>& scales);
 
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
@@ -38,8 +38,19 @@ public:
 	const sf::IpAddress& GetIPAdress() const { return mIPAdress; }
 	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
 
+	// @brief Grabs the most up to date latency peformance.
+	const float GetRecentLatency() const { return mLatency; }
+
+	// @breif Grabs the most up to date jitter peformance.
+	const float GetRecentJitter() const { return mJitter; }
+	
 private:
 
+	// @brief Verifies the packet recieved is valid and stores into the 
+	// game update array.
+	void StoreGameUpdate(const GameData& data);
+
+	// @brief Initialises the UDP sockets and binds them to unused ports.
 	void BindUDPSockets();
 
 	// @brief The client's machine IP
@@ -75,4 +86,11 @@ private:
 
 	sf::Uint32 mAssetCount;
 	sf::Vector2f mWindowMaxBoundary;
+
+
+	// @brief Time difference between sending a packet and
+	// connection recieving the packet.
+	float mLatency;
+
+	float mJitter;
 };

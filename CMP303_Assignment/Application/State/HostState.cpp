@@ -35,16 +35,46 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 {
 	//Fetch mouse coordinates.
 	sf::Vector2f mouseCoordinates = sf::Vector2f(keyboard->MouseX(), keyboard->MouseY());
-	
+
+	AlterBoidParameters(deltaTime, keyboard);
+
 	//Run boid algorithm.
 	Seperation(deltaTime);
+	//Alignment.
 	for (auto& boid : mFlock.mBoids)
 	{
+		TransformComponent& transform = boid.mEntity.GetTransform();
+		sf::Vector2f& boidPos = transform.position;
+
 		//Alignment.
-		sf::Vector2f align = mouseCoordinates - boid.mEntity.GetTransform().position;
+		sf::Vector2f align = mouseCoordinates - boidPos;
+
+		// Calculate rotation.
+		float angle = degrees(atan2f(align.x, align.y)) + 180.0f;
+
 		if (Magnitude(align) > 1.0f)
 		{
-			boid.mEntity.GetTransform().position += Normalise(align) * 250.0f * deltaTime;
+			transform.position += Normalise(align) * 250.0f * deltaTime;
+
+			//flip sprite
+			if ((angle > 270.f && angle < 360.f))
+			{
+				transform.scale = { 2.f, 2.f };
+			}
+			if ((angle > 360.0f && angle < 90.0f))
+			{
+				transform.scale = { 2.f, 2.f };
+			}
+			if ((angle > 90.0f && angle < 180.0f))
+			{
+				transform.scale = { -2.0f, -2.0f };
+			}
+			if ((angle > 180.0f) && (angle < 270.0f))
+			{
+				transform.scale = { -2.f, 2.f };
+			}
+
+			transform.rotation = angle;
 		}
 	}
 	Cohesion(deltaTime);
@@ -54,6 +84,7 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	{
 		mScene->GetRegistery()->UpdateSpriteComponent(i);
 	}
+	
 
 	//Check if we've pressed the home button.
 	if (QueryButton(keyboard))
@@ -163,6 +194,43 @@ void HostState::InitBackdrop()
 
 }
 
+void HostState::AlterBoidParameters(const float deltaTime, Keyboard* keyboard)
+{
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::Q))
+	{
+		mCohesionFactor -= 10.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::E))
+	{
+		mCohesionFactor += 10.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::A))
+	{
+		mSeperationFactor -= 10.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::D))
+	{
+		mSeperationFactor += 10.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::Z))
+	{
+		mMinDistance -= 50.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::C))
+	{
+		mMinDistance += 50.0f * deltaTime;
+	}
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::Space))
+	{
+		mSeperationFactor = 3.7f;
+		mCohesionFactor = 0.5f;
+		mMinDistance = 75.0f;
+	}
+	clamp(mSeperationFactor, 0.1f, 200.f);
+	clamp(mCohesionFactor, 0.1f, 200.f);
+	clamp(mMinDistance, 0.1f, 200.f);
+}
+
 void HostState::GenerateClientAssets()
 {
 	//Will wait until it has a valid pack of assets.
@@ -182,8 +250,7 @@ void HostState::GenerateClientAssets()
 inline void HostState::Seperation(const float deltaTime)
 {
 	sf::Vector2f centroid{};
-	float minDistance = 75.0f;
-	float seperationFactor = 2.7;
+
 
 	for (auto& boid : mFlock.mBoids)
 	{
@@ -204,14 +271,14 @@ inline void HostState::Seperation(const float deltaTime)
 
 				distance = p0 - p1;
 
-				if (Magnitude(distance) < minDistance)
+				if (Magnitude(distance) < mMinDistance)
 				{
-					mFlock.mBoids.at(i).mEntity.GetTransform().position += -(distance * seperationFactor) * deltaTime;
+					mFlock.mBoids.at(i).mEntity.GetTransform().position += -(distance * mSeperationFactor) * deltaTime;
 				}
 			}
 		}
 
-		mFlock.mBoids.at(i).mEntity.GetTransform().position += -(Normalise(centroid) * seperationFactor) * deltaTime;
+		mFlock.mBoids.at(i).mEntity.GetTransform().position += -(Normalise(centroid) * mSeperationFactor) * deltaTime;
 	}
 }
 
@@ -230,7 +297,7 @@ inline void HostState::Cohesion(const float deltaTime)
 	for (auto& boid : mFlock.mBoids)
 	{
 		cohesion = centroid - boid.mEntity.GetTransform().position;
-		boid.mEntity.GetTransform().position += Normalise(cohesion) * 0.5f * deltaTime;
+		boid.mEntity.GetTransform().position += Normalise(cohesion) * mCohesionFactor * deltaTime;
 	}
 }
 
@@ -240,6 +307,7 @@ Boid::Boid(Scene* scene, std::string tag, sf::Texture* texture, sf::Uint32 index
 	float xPos = rand() % 1000 + 1, yPos = rand() % 1000 + 1;
 	mEntity.GetRenderer().bShouldRenderGFX = false;
 	mEntity.GetRenderer().graphics.setSize({0,0});
+	mEntity.GetRenderer().sprite.setOrigin(8.0f, 8.0f);
 	mEntity.GetRenderer().sprite.setScale(2.0f, 2.0f);
 	mEntity.GetTransform().position = { xPos, yPos };
 	mEntity.GetTransform().scale = { 2.0f, 2.0f };

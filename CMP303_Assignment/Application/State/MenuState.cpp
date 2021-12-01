@@ -31,42 +31,42 @@ void MenuState::OnStart()
 	mClientButtonTexture.loadFromFile("Assets/client.png");
 	mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
 
-	//Button text
-	mHostButton.GetText().text.setFont(mHostButton.GetText().font);
-	mHostButton.GetText().text.setCharacterSize(14);
-	mHostButton.GetText().text.setFillColor(sf::Color::White);
-	mHostButton.GetText().text.setOutlineColor(sf::Color::Black);
-	mHostButton.GetText().text.setOutlineThickness(1.2f);
-	mHostButton.GetText().text.setLetterSpacing(1.5f);
-	mHostButton.GetText().text.setString("Host");
+	////Button text
+	//mHostButton.GetText().text.setFont(mHostButton.GetText().font);
+	//mHostButton.GetText().text.setCharacterSize(14);
+	//mHostButton.GetText().text.setFillColor(sf::Color::White);
+	//mHostButton.GetText().text.setOutlineColor(sf::Color::Black);
+	//mHostButton.GetText().text.setOutlineThickness(1.2f);
+	//mHostButton.GetText().text.setLetterSpacing(1.5f);
+	//mHostButton.GetText().text.setString("Host");
 
-	mClientButton.GetText().text.setFont(mClientButton.GetText().font);
-	mClientButton.GetText().text.setCharacterSize(14);
-	mClientButton.GetText().text.setFillColor(sf::Color::White);
-	mClientButton.GetText().text.setOutlineColor(sf::Color::Black);
-	mClientButton.GetText().text.setOutlineThickness(1.2f);
-	mClientButton.GetText().text.setLetterSpacing(1.5f);
-	mClientButton.GetText().text.setString("Client");
+	//mClientButton.GetText().text.setFont(mClientButton.GetText().font);
+	//mClientButton.GetText().text.setCharacterSize(14);
+	//mClientButton.GetText().text.setFillColor(sf::Color::White);
+	//mClientButton.GetText().text.setOutlineColor(sf::Color::Black);
+	//mClientButton.GetText().text.setOutlineThickness(1.2f);
+	//mClientButton.GetText().text.setLetterSpacing(1.5f);
+	//mClientButton.GetText().text.setString("Client");
 
 	//Button graphics
-	mHostButton.GetRenderer().graphics.setFillColor(sf::Color(0,0,0,0));
+	mHostButton.GetRenderer().graphics.setFillColor(sf::Color(255,255,255,0));
 	mHostButton.GetRenderer().graphics.setPosition((mScreenDimensions * 0.5f) - sf::Vector2f(256.0f, 0.f));
 	mHostButton.GetRenderer().graphics.setSize(sf::Vector2f(512.0f, 128.0f));
 	mHostButton.GetRenderer().graphics.setOrigin(0, 0);
 
 	mHostButton.GetRenderer().sprite.setPosition((mScreenDimensions * 0.5f) - sf::Vector2f(256.0f, 0.f));
 	mHostButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
-	mHostButton.GetText().text.setPosition(mHostButton.GetRenderer().graphics.getPosition());
+//	mHostButton.GetText().text.setPosition(mHostButton.GetRenderer().graphics.getPosition());
 
 	//Client
-	mClientButton.GetRenderer().graphics.setFillColor(sf::Color(0,0,0,0));
+	mClientButton.GetRenderer().graphics.setFillColor(sf::Color(255,255,255,0));
 	mClientButton.GetRenderer().graphics.setPosition(sf::Vector2f((mScreenDimensions.x * 0.5f) - 256.0f, mScreenDimensions.y - 256.f));
 	mClientButton.GetRenderer().graphics.setSize(sf::Vector2f(512.0f, 128.0f));
 	mClientButton.GetRenderer().graphics.setOrigin(0, 0);
 
 	mClientButton.GetRenderer().sprite.setPosition(sf::Vector2f((mScreenDimensions.x * 0.5f) - 256.0f, mScreenDimensions.y - 256.f));
 	mClientButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
-	mClientButton.GetText().text.setPosition(mClientButton.GetRenderer().graphics.getPosition());
+//	mClientButton.GetText().text.setPosition(mClientButton.GetRenderer().graphics.getPosition());
 
 	InitBackdrop();
 }
