@@ -85,8 +85,12 @@ private:
 	// @note Some data to keep track of the valid number of data.
 
 	sf::Uint32 mAssetCount;
-	sf::Vector2f mWindowMaxBoundary;
 
+	// @brief Scale along axis are the same so need only track one edge.
+	int mAssetScale = 1;
+
+	// @brief Max level boundaries.
+	sf::Vector2f mWindowMaxBoundary;
 
 	// @brief Time difference between sending a packet and
 	// connection recieving the packet.

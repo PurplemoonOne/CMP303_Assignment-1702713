@@ -31,8 +31,8 @@ struct GameData : public BaseData
 
 	inline void DeleteData()
 	{
-		if (x) delete x;
-		if (y) delete y;
+		if (x)		   delete x;
+		if (y)		   delete y;
 		if (rotations) delete rotations;
 		if (scaleX)	   delete scaleX;
 		if (scaleY)    delete scaleY;

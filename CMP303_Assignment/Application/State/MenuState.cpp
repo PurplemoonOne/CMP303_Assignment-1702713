@@ -18,18 +18,18 @@ void MenuState::OnStart()
 	//Reserve space.
 	mScene->GetRegistery()->ReserveBuffer(80);
 
+	mHostButtonTexture.loadFromFile("Assets/host.png");
+	mHostButtonPressTexture.loadFromFile("Assets/hostC.png");
+
+	mClientButtonTexture.loadFromFile("Assets/client.png");
+	mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
+
 	//Load font
 	mHostButton = Entity(mScene, "Host", &mHostButtonTexture, 0);
 	mClientButton = Entity(mScene, "Client", &mClientButtonTexture, 1);
 
 	mHostButton.GetText().font.loadFromFile("Assets/font.ttf");
 	mClientButton.GetText().font.loadFromFile("Assets/font.ttf");
-
-	mHostButtonTexture.loadFromFile("Assets/host.png");
-	mHostButtonPressTexture.loadFromFile("Assets/hostC.png");
-
-	mClientButtonTexture.loadFromFile("Assets/client.png");
-	mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
 
 	////Button text
 	//mHostButton.GetText().text.setFont(mHostButton.GetText().font);

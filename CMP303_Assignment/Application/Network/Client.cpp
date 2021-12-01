@@ -281,6 +281,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeY = assetSize.y;
 		data.peerUdpRecvPort = mUDPRecvPort;
 
+
 		if (!(packet << data))
 		{
 			APP_ERROR("Host : Failed to pack connection data.");
@@ -305,7 +306,6 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.x;
 		data.peerUdpRecvPort = mUDPRecvPort;
-
 		if (!(packet << data))
 		{
 			APP_ERROR("Peer : Failed to pack connection data.");
@@ -345,6 +345,7 @@ ConnectionData& Client::RecieveAssetsDescFromServer()
 		else
 		{
 			mAssetCount = connData.count;
+			mAssetScale = connData.sizeX;
 
 			if (std::find(mPeers.begin(), mPeers.end(), connData.peerUdpRecvPort) == mPeers.end())
 			{
@@ -430,15 +431,37 @@ void Client::StoreGameUpdate(const GameData& data)
 
 	if (!invalid)
 	{
-		//Is there a strange number or out of bounds...?
+		//Is there an unexpected value?
 		for (int i = 0; i < mAssetCount; ++i)
 		{
+			//If we're in the boundaries of the level we have partly a valid packet.
 			bool validateX = (data.x[i] > 0.f && data.x[i] < mWindowMaxBoundary.x);
 			bool validateY = (data.y[i] > 0.f && data.y[i] < mWindowMaxBoundary.y);
+			//Check rotations are valid.
+			bool validateRotation = (data.rotations[i] >= 0.0f && data.rotations[i] <= 360.0f) ? true : false;
+			//If the ID and index match we have a valid ID for this asset.
 			bool validID = (data.objectIDs[i] == i);
-			if (!(validateX && validateY && validID))
+			//All must pass the previous tests to be considered.
+			if (!(validateX && validateY && validID && validateRotation))
 			{
 				APP_WARNING("Packet tampered! Invalid position and/or ID! Discarding data...");
+				invalid = true;
+			}
+		}
+	}
+
+	if (!invalid)
+	{
+
+		//Is there an unexpected value?
+		for (int i = 0; i < mAssetCount; ++i)
+		{
+			//If the packet reads we're larger or smaller than the expected size... invalid.
+			bool validateScaleX = (int(data.scaleX[i]) == mAssetScale || int(data.scaleX[i]) == -mAssetScale) ? true : false;
+			bool validateScaleY = (int(data.scaleY[i]) == mAssetScale || int(data.scaleY[i]) == -mAssetScale) ? true : false;
+			if (!(validateScaleX && validateScaleY))
+			{
+				APP_WARNING("Packet tampered! Invalid scale! Discarding data...");
 				invalid = true;
 			}
 		}
@@ -449,7 +472,7 @@ void Client::StoreGameUpdate(const GameData& data)
 		//Check for packet duplication...
 		for (auto& storeData : mGameData)
 		{
-			if ((storeData.systemTime == data.systemTime))
+			if (int(storeData.systemTime == data.systemTime))
 			{
 				APP_WARNING("Duplicate packet recieved!");
 				invalid = true;
