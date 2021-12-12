@@ -1,9 +1,9 @@
-#include "Log.h"
+#include "ServerLog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-std::shared_ptr<spdlog::logger> Logger::mLog;
+std::shared_ptr<spdlog::logger> ServerLog::mLog;
 
-void Logger::Init()
+void ServerLog::Init()
 {
 	spdlog::set_pattern("%^ [%T]: %v%$");
 	mLog = spdlog::stderr_color_mt("Application");

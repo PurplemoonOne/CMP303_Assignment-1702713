@@ -2,7 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
-class Logger
+class ServerLog
 {
 public:
 	static void Init();
@@ -12,10 +12,10 @@ private:
 };
 
 #ifdef _DEBUG
-#define APP_ERROR(...)   ::Logger::GetLogger()->error(__VA_ARGS__);
-#define APP_WARNING(...) ::Logger::GetLogger()->warn(__VA_ARGS__);
-#define APP_INFO(...)    ::Logger::GetLogger()->info(__VA_ARGS__);
-#define APP_TRACE(...)   ::Logger::GetLogger()->trace(__VA_ARGS__);
+#define APP_ERROR(...)   ::ServerLog::GetLogger()->error(__VA_ARGS__);
+#define APP_WARNING(...) ::ServerLog::GetLogger()->warn(__VA_ARGS__);
+#define APP_INFO(...)    ::ServerLog::GetLogger()->info(__VA_ARGS__);
+#define APP_TRACE(...)   ::ServerLog::GetLogger()->trace(__VA_ARGS__);
 #define ASSERT(expr, ...) {if(!expr){APP_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak();}}
 #else
 #define ASSERT(expr, ...)
