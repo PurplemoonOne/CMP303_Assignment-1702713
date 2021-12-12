@@ -193,6 +193,45 @@ void Client::ConnectToServer()
 	}
 }
 
+void Client::RecieveConnectionStatusFromServer()
+{
+	DisconnectPCKT data;
+	sf::Packet packet;
+	if (mSelect.wait(sf::milliseconds(16)))
+	{
+		if (mSelect.isReady(mTCPSocket))
+		{
+			if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
+			{
+				APP_ERROR("Could not retrieve status from server...");
+			}
+			else
+			{
+				if (!(packet >> data))
+				{
+					APP_ERROR("Could not unpack server status data...")
+				}
+				else
+				{
+					APP_INFO("Retrieved status from server.");
+					if (data.quit == 1)
+					{
+						if (data.message == '0')
+						{
+							APP_INFO("Host has quit.");
+						}
+						else
+						{
+							APP_INFO("Client has quit.");
+						}
+						mPeerQuit = true;
+					}
+				}
+			}
+		}
+	}
+}
+
 void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, std::vector<float>& rotations, std::vector<std::pair<float, float>>& scales)
 {
 	GameData data;
@@ -537,7 +576,8 @@ bool Client::Disconnect()
 
 	data.id = 0;
 	data.quit = 1;
-	data.message = " ";
+	std::string privelage = std::to_string((int)mPrivelage);
+	data.message = privelage;
 	data.systemTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
 	if (!(packet << data))
@@ -552,17 +592,9 @@ bool Client::Disconnect()
 		}
 		else
 		{
+			APP_INFO("Disconnection packet successfully sent to the server");
 			returnStatus = true;
 		}
-		
-		sf::IpAddress ipAddress = sf::IpAddress(mPeer.ipAddress);
-		sf::Uint16 port = mPeer.port;
-		if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done);
-		{
-			APP_ERROR("Could not let client know we are disconnecting...");
-		}
-		mPeer.ipAddress = 0;
-		mPeer.port = 0;
 	}
 	return returnStatus;
 }

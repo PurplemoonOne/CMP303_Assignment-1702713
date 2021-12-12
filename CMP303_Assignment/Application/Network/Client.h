@@ -29,6 +29,8 @@ public:
 	// @brief Establish a connection with the server.
 	void ConnectToServer();
 
+	void RecieveConnectionStatusFromServer();
+
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
 	bool Disconnect();
 

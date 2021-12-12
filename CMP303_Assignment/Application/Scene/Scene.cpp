@@ -189,6 +189,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 	
 	//Recieve packets from the client.
 	mClient->RecieveGameUpdate();
+	
 
 	if (hasAssets)
 	{
@@ -240,6 +241,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 			mLerp = 0.0f;
 		}
 	}
+
 
 	if (mClient->GetHasClientQuit())
 	{
@@ -352,6 +354,7 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 			gameDataRef.resize(0);
 		}
 	}
+
 
 	//If the other connection has quit remove their assets.
 	if (mClient->GetHasClientQuit())

@@ -60,7 +60,7 @@ void Connection::SendTCP(DisconnectPCKT& message)
 		}
 		else
 		{
-			APP_TRACE("Successfully send disconnect message.");
+			APP_TRACE("Successfully sent disconnect message.");
 		}
 	}
 }

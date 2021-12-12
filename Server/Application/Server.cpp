@@ -89,7 +89,25 @@ void Server::QueryConnections()
 
 					if (data.quit == 1)
 					{
-						RemoveConnection(i);
+						//Tell the other connection that the host/client has left.
+						if (data.message == '0')
+						{
+							if (mConnections.at(1) != nullptr)
+							{
+								mConnections.at(1)->SendTCP(data);
+							}
+							RemoveConnection(0);
+						}
+						else
+						{
+							if (mConnections.at(0) != nullptr)
+							{					
+								mConnections.at(0)->SendTCP(data);
+							}
+							RemoveConnection(1);
+						}
+					
+						
 						break;
 					}
 				}
@@ -178,80 +196,44 @@ void Server::InitConnection(sf::TcpSocket* socket)
 
 	if (connectionData.privelage == 0)
 	{
-		//If the number of host's is not greater than 1.
-		if (mHostCount < 1)
-		{
-			APP_TRACE("A new host has joined!");
+		APP_TRACE("A new host has joined!");
 
-			connection->SetPrivelage(ClientPrivelage::Host);
-			connection->SetUDPPort(connectionData.peerUdpRecvPort);
-			connection->SetNetworkID(mTotalConnections);
-			connection->SetInit(true);
-			connection->SetConnectionIP(connectionData.ipAddress);
-			connection->SetHasAssets(false);
-			mSelect.add(*connection->GetTCPSocket());
-			mConnections.at(0) = connection;
+		connection->SetPrivelage(ClientPrivelage::Host);
+		connection->SetUDPPort(connectionData.peerUdpRecvPort);
+		connection->SetNetworkID(mTotalConnections);
+		connection->SetInit(true);
+		connection->SetConnectionIP(connectionData.ipAddress);
+		connection->SetHasAssets(false);
+		mSelect.add(*connection->GetTCPSocket());
+		mConnections.at(0) = connection;
 
-			StoreAssetData(connectionData);
-			
-			APP_TRACE("Storing host asset description.");
+		StoreAssetData(connectionData);
+		
+		APP_TRACE("Storing host asset description.");
 
-			mHostCount++;
-			mTotalConnections++;
-		}
-
-		//Another host attempted to join the server.
-		else
-		{
-			//Send a message to the client attepted to host and close connection.
-			APP_WARNING("Another connection attempted to host!");
-			DisconnectPCKT connectionData;
-			connectionData.message = "The server has too many hosts, try again later.";
-			connectionData.id = 0;
-			connection->SendTCP(connectionData);
-			connection->GetTCPSocket()->disconnect();
-			delete connection;
-			connection = nullptr;
-			return;
-		}
+		mHostCount++;
+		mTotalConnections++;
 	}
 
 
 	//A client joined.
 	else if(connectionData.privelage == 1)
 	{
-		if (mClientCount < 1)
-		{
-			APP_TRACE("A new client has joined!");
+		APP_TRACE("A new client has joined!");
 
-			connection->SetPrivelage(ClientPrivelage::Client);
-			connection->SetUDPPort(connectionData.peerUdpRecvPort);
-			connection->SetNetworkID(mTotalConnections);
-			connection->SetInit(true);
-			connection->SetHasAssets(false);
-			connection->SetConnectionIP(connectionData.ipAddress);
-			mConnections.at(1) = connection;
-			mSelect.add(*connection->GetTCPSocket());
-			StoreAssetData(connectionData);
-			APP_TRACE("Storing client asset description.");
+		connection->SetPrivelage(ClientPrivelage::Client);
+		connection->SetUDPPort(connectionData.peerUdpRecvPort);
+		connection->SetNetworkID(mTotalConnections);
+		connection->SetInit(true);
+		connection->SetHasAssets(false);
+		connection->SetConnectionIP(connectionData.ipAddress);
+		mConnections.at(1) = connection;
+		mSelect.add(*connection->GetTCPSocket());
+		StoreAssetData(connectionData);
+		APP_TRACE("Storing client asset description.");
 
-			mClientCount++;
-			mTotalConnections++;
-		}
-
-		else
-		{
-			//Send a message to the client attepted to host and close connection.
-			APP_WARNING("Another connection attempted to join!");
-			DisconnectPCKT connectionData;
-			connectionData.message = "The server has too many clients, try again later.";
-			connectionData.id = 0;
-			connection->SendTCP(connectionData);
-			connection->GetTCPSocket()->disconnect();
-			delete connection;
-			connection = nullptr;
-			return;
-		}
+		mClientCount++;
+		mTotalConnections++;
 	}
 
 	//Something went wrong.
