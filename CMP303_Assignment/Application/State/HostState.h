@@ -66,6 +66,7 @@ private:
 	//Gameplay
 	Flock mFlock;
 	Entity mShark;
+	Entity mSharkGhost;
 	sf::Texture mSwordFishTexture;
 
 	//UI

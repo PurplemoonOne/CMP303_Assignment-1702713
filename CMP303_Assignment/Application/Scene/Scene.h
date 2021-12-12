@@ -21,6 +21,7 @@ public:
 	void Clean();
 
 	// @brief Create a new client object.
+	void DeleteClientAndSetNull() { delete mClient; mClient = nullptr; }
 	void CreateClient(ClientPrivelage privelage);
 	Client* GetClient() { return mClient; }
 
@@ -40,7 +41,7 @@ private:
 	const float Lerp(float a, float b, float t);
 
 	// @brief Initialises the latency graphic.
-	void InitLatencyGraphic();
+	void InitNetworkStatsText();
 	bool mInitLatencyGraphic;
 
 	// @brief track how long it's been since last tick.

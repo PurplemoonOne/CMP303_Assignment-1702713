@@ -79,6 +79,20 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	}
 	Cohesion(deltaTime);
 
+
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::Space))
+	{
+		keyboard->SetKeyUp(sf::Keyboard::Key::Space);
+		if (mEnableGhosts)
+		{
+			mEnableGhosts = false;
+		}
+		else
+		{
+			mEnableGhosts = true;
+		}
+	}
+
 	//Update the position of the sprites.
 	for (int i = 0; i < mBoidCount; ++i)
 	{
@@ -93,7 +107,8 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 		if (mScene->GetClient()->Disconnect())
 		{
 			mHasGameAssets = false;
-			delete mScene->GetClient();
+			mScene->DeleteClientAndSetNull();
+
 			mScene->TransitionState("menu");
 		}
 		else
@@ -244,6 +259,15 @@ void HostState::GenerateClientAssets()
 		mShark.GetRenderer().bShouldRenderSPR = true;
 		mShark.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeX });
 		mShark.GetTransform().scale = { assets.sizeX, assets.sizeX };
+
+		mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
+		mSharkGhost = Entity(mScene, "sharkGhost", &mSwordFishTexture, 68);
+		mSharkGhost.GetRenderer().bShouldRenderGFX = false;
+		mSharkGhost.GetRenderer().bShouldRenderSPR = true;
+		mSharkGhost.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeX });
+		mSharkGhost.GetRenderer().sprite.setColor(sf::Color(125, 125, 125, 125));
+		mSharkGhost.GetTransform().scale = { assets.sizeX, assets.sizeX };
+
 		mHasGameAssets = true;
 	}
 }
@@ -322,4 +346,5 @@ void Flock::CreateFlock(Scene* scene, sf::Uint32 count)
 	{
 		mBoids.push_back(Boid(scene, "B" + std::to_string(i), &mFishTexture, i));
 	}
+
 }

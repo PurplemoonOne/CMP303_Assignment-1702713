@@ -17,7 +17,6 @@ public:
 	virtual void OnDetach() override;
 
 	void GenerateHostAssets();
-
 private:
 	void InitBackdrop();
 	bool QueryButton(Keyboard* keyboard);

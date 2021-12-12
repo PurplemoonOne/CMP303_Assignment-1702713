@@ -17,7 +17,6 @@ struct Compare
 	}
 };
 
-//Send 32 packets in 1 second.
 const double TICK_RATE = 1.0f / 64.0f;
 
 Scene* Scene::mContext = nullptr;
@@ -25,7 +24,7 @@ Scene* Scene::mContext = nullptr;
 Scene::Scene(sf::RenderWindow* window)
 	:
 	mActiveState(nullptr),
-	mTickUpdateThreshold((1.0f / 64.0f)),
+	mTickUpdateThreshold((1.0f / 32.0f)),
 	mInitLatencyGraphic(false)
 {
 	if (mContext != nullptr)
@@ -105,7 +104,7 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 		{
 			if (mActiveState == mStates["host"] || mActiveState == mStates["client"])
 			{
-				InitLatencyGraphic();
+				InitNetworkStatsText();
 			}
 		}
 		if (mActiveState == mStates["menu"])
@@ -116,10 +115,14 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 		if (mInitLatencyGraphic)
 		{
 			sf::Text* text = &mRegistery.GetTextComponent("Latency").text;
-
 			//Update current latency
-			sf::String latency = "Latency " + std::to_string(mClient->GetRecentLatency()) + " ms";
-			text->setString(latency);
+			sf::String textString = "Latency " + std::to_string(mClient->GetRecentLatency()) + " s";
+			text->setString(textString);
+
+			text = &mRegistery.GetTextComponent("Ghosts").text;
+			textString = "Ghosts enabled ";
+			textString += (mActiveState->IsGhostsEnabled()) ? "True" : "False";
+			text->setString(textString);
 		}
 
 
@@ -211,6 +214,17 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 			//Run our linear prediction.
 			predictedPosition = LinearPrediction(gameDataRef.at(gameDataRef.size() - 1), gameDataRef.at(gameDataRef.size() - 2), 0);
 			
+			bool enableGhosts = static_cast<HostState*>(mActiveState)->IsGhostsEnabled();
+
+			//Set shark ghost to predicted position.
+			if (enableGhosts)
+			{
+				GameData& recentPacket = gameDataRef.at(gameDataRef.size() - 1);
+				mRegistery.GetTransformComponent("sharkGhost").position = predictedPosition;
+				mRegistery.GetTransformComponent("sharkGhost").rotation = recentPacket.rotations[0];
+				mRegistery.GetTransformComponent("sharkGhost").scale.x = recentPacket.scaleX[0];
+				mRegistery.GetTransformComponent("sharkGhost").scale.y = recentPacket.scaleY[0];
+			}
 			
 			predictedPosition =
 			{
@@ -317,7 +331,28 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 				predictedPosition.push_back(LinearPrediction(gameDataRef.at(gameDataRef.size() - 1), gameDataRef.at(gameDataRef.size() - 2), i));
 			}
 
+			bool enableGhosts = static_cast<ClientState*>(mActiveState)->IsGhostsEnabled();
 
+			if (enableGhosts)
+			{
+				//Update ghosts
+				int j = 0;
+				for (int i = boidCount; i < (2 * boidCount); ++i)
+				{
+					GameData& recentPacket = gameDataRef.at(gameDataRef.size() - 1);
+					//Update the ghost's position.
+					mRegistery.GetTransformComponent(i).position = predictedPosition.at(j);
+					mRegistery.GetTransformComponent(i).rotation = recentPacket.rotations[j];
+					mRegistery.GetTransformComponent(i).scale.x = recentPacket.scaleX[j];
+					mRegistery.GetTransformComponent(i).scale.y = recentPacket.scaleY[j];
+
+					mRegistery.UpdateSpriteComponent(i);
+					++j;
+				}
+			}
+			
+
+			//Update the actual copy of the object.
 			for (int i = 0; i < boidCount; ++i)
 			{
 				//Interpolate current position
@@ -337,8 +372,7 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 
 				mRegistery.UpdateSpriteComponent(i);
 			}
-			
-			
+		
 			//Reset our variables.
 			predictedPosition.clear();
 			predictedPosition.resize(0);
@@ -407,16 +441,18 @@ const float Scene::Lerp(float a, float b, float t)
 	return (a + t * (b - a));
 }
 
-void Scene::InitLatencyGraphic()
+void Scene::InitNetworkStatsText()
 {
 	mRegistery.AddNewEntity("Latency", { 0,0 }, { 32.f, 32.f }, 0, 79);
+	mRegistery.AddNewEntity("Ghosts", { 0,0 }, { 32.f, 32.f }, 0, 78);
+	mRegistery.AddNewEntity("TickRate", { 0,0 }, { 32.f, 32.f }, 0, 77);
 	mRegistery.GetTextComponent("Latency").bInit = true;
+	mRegistery.GetTextComponent("Ghosts").bInit = true;
+	mRegistery.GetTextComponent("TickRate").bInit = true;
 	sf::Text* text = &mRegistery.GetTextComponent("Latency").text;
 	sf::RectangleShape* shape = &mRegistery.GetRendererComponent("Latency").graphics;
 	mRegistery.GetRendererComponent("Latency").bShouldRenderSPR = false;
 	
-
-
 	mLatencyFont.loadFromFile("Assets/font.ttf");
 	text->setFont(mLatencyFont);
 	text->setPosition(128.0f, 128.0f);
@@ -425,11 +461,31 @@ void Scene::InitLatencyGraphic()
 	text->setOutlineColor(sf::Color::Black);
 	text->setOutlineThickness(1.2f);
 	text->setLetterSpacing(1.5f);
-	text->setString("Latency (ms)");
+	text->setString("Latency (s)");
 	
+	text = &mRegistery.GetTextComponent("Ghosts").text;
+	text->setFont(mLatencyFont);
+	text->setPosition(128.0f, 144.0f);
+	text->setCharacterSize(14.f);
+	text->setFillColor(sf::Color::White);
+	text->setOutlineColor(sf::Color::Black);
+	text->setOutlineThickness(1.2f);
+	text->setLetterSpacing(1.5f);
+	text->setString("Enable Ghosts");
+
+	text = &mRegistery.GetTextComponent("TickRate").text;
+	text->setFont(mLatencyFont);
+	text->setPosition(128.0f, 160.0f);
+	text->setCharacterSize(14.f);
+	text->setFillColor(sf::Color::White);
+	text->setOutlineColor(sf::Color::Black);
+	text->setOutlineThickness(1.2f);
+	text->setLetterSpacing(1.5f);
+	std::string string = "Tick Rate : " + std::to_string(TICK_RATE);
+	text->setString(string);
 
 	shape->setFillColor(sf::Color(0, 0, 0, 125));
 	shape->setPosition(128.0f, 128.0f);
-	shape->setSize({ 256.0f, 32.0f });
+	shape->setSize({ 256.0f, 48.0f });
 	mInitLatencyGraphic = true;
 }

@@ -29,7 +29,6 @@ public:
 	// @brief Establish a connection with the server.
 	void ConnectToServer();
 
-	void RecieveConnectionStatusFromServer();
 
 	// @brief Ask the server to end the stream, hence close the socket gracefully.
 	bool Disconnect();
@@ -46,7 +45,7 @@ public:
 	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
 
 	// @brief Grabs the most up to date latency peformance.
-	const float GetRecentLatency() const { return mLatency; }
+	const float GetRecentLatency() const { return mPeerLatency; }
 
 	// @brief Check if the client has left the game.
 	bool GetHasClientQuit() const { return mPeerQuit; }
@@ -101,8 +100,13 @@ private:
 
 	// @brief Time difference between sending a packet and
 	// connection recieving the packet.
-	float mLatency;
+	float mPeerLatency;
+
+	float mLatency = 0.f;
+
+	// Holds the time the last packet was recieved at. Used to calculate latency.
+	double mRecvTime = 0.0;
 
 	bool mPeerQuit = false;
-
+	bool mThisConnQuit = false;
 };

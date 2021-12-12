@@ -70,6 +70,19 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 	
 	}
 
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::Space))
+	{
+		keyboard->SetKeyUp(sf::Keyboard::Key::Space);
+		if (mEnableGhosts)
+		{
+			mEnableGhosts = false;
+		}
+		else
+		{
+			mEnableGhosts = true;
+		}
+	}
+
 
 	//Update the position of the sprites.
 	mScene->GetRegistery()->UpdateSpriteComponent("shark");
@@ -80,7 +93,7 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 		if (mScene->GetClient()->Disconnect())
 		{
 			mHasGameAssets = false;
-			delete mScene->GetClient();
+			mScene->DeleteClientAndSetNull();
 			mScene->TransitionState("menu");
 		}
 		else
@@ -117,6 +130,19 @@ void ClientState::GenerateHostAssets()
 			entity.GetTransform().scale = { assets.sizeX, assets.sizeY };
 		}
 		mBoidCount = assets.count;
+
+
+		for (sf::Uint32 i = mBoidCount; i < (2 * mBoidCount); ++i)
+		{
+			Entity entity = Entity(mScene, "G" + std::to_string(i), &mFishTexture, i);
+			entity.GetRenderer().bShouldRenderGFX = false;
+			entity.GetRenderer().bShouldRenderSPR = true;
+			entity.GetRenderer().graphics.setSize({ 0,0 });
+			entity.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeY });
+			entity.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 120));
+			entity.GetTransform().scale = { assets.sizeX, assets.sizeY };
+		}
+
 		mHasGameAssets = true;
 	}
 }

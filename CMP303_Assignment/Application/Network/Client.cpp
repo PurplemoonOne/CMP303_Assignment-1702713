@@ -9,17 +9,17 @@ using namespace std::chrono;
 
 sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 {
-	return packet << data.systemTime << data.message << data.id << data.quit;
+	return packet << data.systemTime << data.latency << data.message << data.id << data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
-	return packet >> data.systemTime >> data.message >> data.id >> data.quit;
+	return packet >> data.systemTime >> data.latency >> data.message >> data.id >> data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	packet >> data.systemTime >> data.peerUdpRecvPort >> data.peerIpAddress >> data.arraySize;
+	packet >> data.systemTime >> data.latency >> data.peerUdpRecvPort >> data.peerIpAddress >> data.arraySize >> data.quit;
 
 	sf::Uint32 count = data.arraySize;
 	if (count < 256)
@@ -56,7 +56,7 @@ sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	packet  << data.systemTime << data.peerUdpRecvPort << data.peerIpAddress << data.arraySize;
+	packet  << data.systemTime << data.latency << data.peerUdpRecvPort << data.peerIpAddress << data.arraySize << data.quit;
 
 	sf::Uint32 count = data.arraySize;
 
@@ -98,30 +98,12 @@ sf::Packet& operator <<(sf::Packet& packet, const ConnectionData& data)
 	return packet << data.systemTime << data.privelage << data.peerUdpRecvPort << data.ipAddress << data.type << data.count << data.sizeX << data.sizeY;
 }
 
-sf::Packet& operator <<(sf::Packet& packet, const ClientPortAndIP& data)
-{
-	return packet << data.udpPort;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, ClientPortAndIP& data)
-{
-	return packet >> data.udpPort;
-}
-
-sf::Packet& operator <<(sf::Packet& packet, const LatencyPacket& data)
-{
-	return packet << data.timeA << data.timeB;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, LatencyPacket& data)
-{
-	return packet >> data.timeA >> data.timeB;
-}
-
 
 Client::Client(sf::Vector2f windowMaxBoundaries)
 	:
-	mWindowMaxBoundary(windowMaxBoundaries)
+	mWindowMaxBoundary(windowMaxBoundaries),
+	mThisConnQuit(false),
+	mPeerQuit(false)
 {
 	// Fetch the machines IP Address. 
 	mIPAdress = sf::IpAddress::getLocalAddress();
@@ -130,7 +112,6 @@ Client::Client(sf::Vector2f windowMaxBoundaries)
 
 Client::~Client()
 {
-
 }
 
 void Client::BindUDPSockets()
@@ -193,49 +174,20 @@ void Client::ConnectToServer()
 	}
 }
 
-void Client::RecieveConnectionStatusFromServer()
-{
-	DisconnectPCKT data;
-	sf::Packet packet;
-	if (mSelect.wait(sf::milliseconds(16)))
-	{
-		if (mSelect.isReady(mTCPSocket))
-		{
-			if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
-			{
-				APP_ERROR("Could not retrieve status from server...");
-			}
-			else
-			{
-				if (!(packet >> data))
-				{
-					APP_ERROR("Could not unpack server status data...")
-				}
-				else
-				{
-					APP_INFO("Retrieved status from server.");
-					if (data.quit == 1)
-					{
-						if (data.message == '0')
-						{
-							APP_INFO("Host has quit.");
-						}
-						else
-						{
-							APP_INFO("Client has quit.");
-						}
-						mPeerQuit = true;
-					}
-				}
-			}
-		}
-	}
-}
-
 void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, std::vector<float>& rotations, std::vector<std::pair<float, float>>& scales)
 {
 	GameData data;
 	bool heapAlloc = false;
+
+	if (mPeerLatency > 0.f)
+	{
+		data.latency = mPeerLatency;
+	}
+	if (mThisConnQuit)
+	{
+		data.quit = 1;
+	}
+
 	//Initialise the buffer.
 	if (mPrivelage == ClientPrivelage::Host)
 	{
@@ -423,27 +375,24 @@ void Client::RecieveGameUpdate()
 			else 
 			{
 				GameData recvData;
-				LatencyPacket recvLatencyData;
-				DisconnectPCKT recvDisconnectData;
 				if ((packet >> recvData))
 				{
 					//Store the game update and runa security check on the data.
 					APP_INFO("Recieved game update.");
 					StoreGameUpdate(recvData);
-				}
-				else if((packet >> recvLatencyData))
-				{
-					APP_INFO("Recieved our latest latency data.");
-				
-					mLatency = recvLatencyData.timeB - recvLatencyData.timeA;
-					mLatency *= 0.001; //Convert into seconds.
-				}
-				else if((packet >> recvDisconnectData))
-				{
-					if (recvDisconnectData.quit == 1)
-					{
-						APP_INFO("Client has left the game, cleaning assets...");
 
+					mRecvTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+
+					mPeerLatency = mRecvTime - recvData.systemTime;
+					mPeerLatency *= 0.001; //Convert into seconds.
+
+					if (recvData.latency > 0.f)
+					{
+						mLatency = recvData.latency;
+					}
+
+					if (recvData.quit == 1)
+					{
 						mPeerQuit = true;
 					}
 				}
@@ -540,39 +489,14 @@ void Client::StoreGameUpdate(const GameData& data)
 		//Otherwise we don't have this packet so store it.
 		APP_INFO("Received a valid packet!");
 		mGameData.push_back(data);
-
-		//Send back a latency packet to inform the other connection their current latency.
-		LatencyPacket latencyData;
-		sf::Packet latencyPacket;
-		latencyData.timeA = data.systemTime;//Time stored when sent from other connection.
-		latencyData.timeB = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();//Time now when recieved.
-
-		if (!(latencyPacket << latencyData))
-		{
-			APP_ERROR("Failed to pack latency data...");
-		}
-		else
-		{
-			sf::Uint16 returnToSenderPort = data.peerUdpRecvPort;
-			sf::IpAddress ipAddress = sf::IpAddress(data.peerIpAddress);
-			//Already have valid port number and ip address from the connection.
-			if (mUDPSendSocket.send(latencyPacket, ipAddress, returnToSenderPort) != sf::UdpSocket::Done)
-			{
-				APP_ERROR("Failed to send latency packet!");
-			}
-			else
-			{
-				APP_INFO("Sending latency data back to peer...");
-			}
-		}
 	}
 }
 
 bool Client::Disconnect()
 {
 	DisconnectPCKT data;
+	GameData sendData;
 	sf::Packet packet;
-	bool returnStatus = false;
 
 	data.id = 0;
 	data.quit = 1;
@@ -593,9 +517,9 @@ bool Client::Disconnect()
 		else
 		{
 			APP_INFO("Disconnection packet successfully sent to the server");
-			returnStatus = true;
+			mThisConnQuit = true;
 		}
 	}
-	return returnStatus;
+	return mThisConnQuit;
 }
 

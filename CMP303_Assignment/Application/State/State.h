@@ -30,9 +30,11 @@ public:
 	}
 
 	const bool HasGameAssets() { return mHasGameAssets; }
+	bool IsGhostsEnabled() const { return mEnableGhosts; }
 
 protected:
 	Scene* mScene;
 	bool mUpdate = true;
 	bool mHasGameAssets = false;
+	bool mEnableGhosts = false;
 };

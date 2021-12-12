@@ -13,6 +13,7 @@ enum class ClientPrivelage
 struct BaseData
 {
 	double systemTime;
+	double latency;
 };
 
 // @brief Packet containing positional data of the objects.
@@ -38,7 +39,7 @@ struct GameData : public BaseData
 		if (scaleY)    delete scaleY;
 		if (objectIDs) delete objectIDs;
 	}
-
+	sf::Uint8 quit = 0;
 	sf::Uint16 peerUdpRecvPort;
 	sf::Uint32 peerIpAddress;
 	sf::Uint32 arraySize;
