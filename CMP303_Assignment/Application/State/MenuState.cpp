@@ -4,7 +4,9 @@
 
 MenuState::MenuState(sf::Vector2f screenDimensions)
 	:
-	mScreenDimensions(screenDimensions)
+	mScreenDimensions(screenDimensions),
+	mTexturesLoaded(false),
+	mFontLoaded(false)
 {
 	
 }
@@ -18,18 +20,21 @@ void MenuState::OnStart()
 	//Reserve space.
 	mScene->GetRegistery()->ReserveBuffer(80);
 
-	mHostButtonTexture.loadFromFile("Assets/host.png");
-	mHostButtonPressTexture.loadFromFile("Assets/hostC.png");
+	if (!mTexturesLoaded)
+	{
+		mHostButtonTexture.loadFromFile("Assets/host.png");
+		mHostButtonPressTexture.loadFromFile("Assets/hostC.png");
 
-	mClientButtonTexture.loadFromFile("Assets/client.png");
-	mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
+		mClientButtonTexture.loadFromFile("Assets/client.png");
+		mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
+		mTexturesLoaded = true;
+	}
+
 
 	//Load font
 	mHostButton = Entity(mScene, "Host", &mHostButtonTexture, 0);
 	mClientButton = Entity(mScene, "Client", &mClientButtonTexture, 1);
 
-	mHostButton.GetText().font.loadFromFile("Assets/font.ttf");
-	mClientButton.GetText().font.loadFromFile("Assets/font.ttf");
 
 	////Button text
 	//mHostButton.GetText().text.setFont(mHostButton.GetText().font);

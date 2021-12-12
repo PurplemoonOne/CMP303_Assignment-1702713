@@ -46,6 +46,7 @@ public:
 
 	void GenerateClientAssets();
 	const bool HasAssets() const { return mHasAssets; }
+	void SetHasAssets(bool value) { mHasAssets = value; }
 
 private:
 	virtual void OnStart() override;

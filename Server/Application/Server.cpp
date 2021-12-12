@@ -97,35 +97,6 @@ void Server::QueryConnections()
 		}
 	}
 
-	//if (mHasAssets)
-	//{
-	//	//Check if the client needs assets.
-	//	for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
-	//	{
-	//		if (mConnections.at(i) != nullptr)
-	//		{
-	//			//If the client is still waiting for assets send them now.
-	//			if (!mConnections.at(i)->HasAssets())
-	//			{
-	//				if (mConnections.at(i)->GetConnectionPrivelage() == ClientPrivelage::Client)
-	//				{
-	//					if (mConnections.at(i)->SendAssets(mAssets))
-	//					{
-	//						mConnections.at(i)->SetHasAssets(true);
-	//					}
-	//				}
-	//				else
-	//				{
-	//					if (mConnections.at(i)->SendAssets(mAssets))
-	//					{
-	//						mConnections.at(i)->SetHasAssets(true);
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-
 	if (mConnections.at(1) != nullptr)
 	{
 		if (!mConnections.at(1)->HasAssets())
@@ -216,6 +187,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			connection->SetUDPPort(connectionData.peerUdpRecvPort);
 			connection->SetNetworkID(mTotalConnections);
 			connection->SetInit(true);
+			connection->SetConnectionIP(connectionData.ipAddress);
 			connection->SetHasAssets(false);
 			mSelect.add(*connection->GetTCPSocket());
 			mConnections.at(0) = connection;
@@ -257,6 +229,7 @@ void Server::InitConnection(sf::TcpSocket* socket)
 			connection->SetNetworkID(mTotalConnections);
 			connection->SetInit(true);
 			connection->SetHasAssets(false);
+			connection->SetConnectionIP(connectionData.ipAddress);
 			mConnections.at(1) = connection;
 			mSelect.add(*connection->GetTCPSocket());
 			StoreAssetData(connectionData);

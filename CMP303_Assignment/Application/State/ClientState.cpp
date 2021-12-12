@@ -23,7 +23,7 @@ void ClientState::OnStart()
 	mScene->GetClient()->ConnectToServer();
 
 	//Send client data to server.
-	mScene->GetClient()->SendConnectionInformation(1, 1, {5.0f, 5.0f});
+	mScene->GetClient()->SendConnectionInformation(1, 1, {4.0f, 4.0f});
 
 	//Load texture.
 	mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
@@ -60,38 +60,15 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 	{
 		sf::Vector2f& sharkPos = mScene->GetRegistery()->GetTransformComponent("shark").position;
 		sf::Vector2f& sharkScale = mScene->GetRegistery()->GetTransformComponent("shark").scale;
-		float& sharkRotation = mScene->GetRegistery()->GetTransformComponent("shark").rotation;
 
 		sf::Vector2f align = mouseCoordinates - sharkPos;
-
-		//Calculate new rotation.
-		float angle = degrees(atan2f(align.x, align.y)) - 180.0f;
 
 		//Update shark's position.
 		if (Magnitude(align) > 1.0f)
 		{
 			sharkPos += Normalise(align) * 250.0f * deltaTime;
 		}
-		//Update shark's angle.
-		sharkRotation = angle;
-		
-		//flip sprite
-		if ((angle > 270.f && angle < 360.f))
-		{
-			sharkScale = { 4.f, 4.f };
-		}
-		if ((angle > 360.0f && angle < 90.0f))
-		{
-			sharkScale = { 4.f, 4.f };
-		}
-		if ((angle > 90.0f && angle < 180.0f))
-		{
-			sharkScale = { -4.0f, -4.0f };
-		}
-		if ((angle > 180.0f) && (angle < 270.0f))
-		{
-			sharkScale = { -4.f, 4.f };
-		}
+	
 	}
 
 
@@ -123,7 +100,7 @@ void ClientState::OnDetach()
 void ClientState::GenerateHostAssets()
 {
 	//Will wait until it has a valid pack of assets.
-	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromServer();
+	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromClient();
 
 	if (assets.count > 0)
 	{
@@ -135,6 +112,7 @@ void ClientState::GenerateHostAssets()
 		{
 			Entity entity = Entity(mScene, "B" + std::to_string(i), &mFishTexture, i);
 			entity.GetRenderer().bShouldRenderGFX = false;
+			entity.GetRenderer().bShouldRenderSPR = true;
 			entity.GetRenderer().graphics.setSize({ 0,0});
 			entity.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeY });
 			entity.GetTransform().scale = { assets.sizeX, assets.sizeY };

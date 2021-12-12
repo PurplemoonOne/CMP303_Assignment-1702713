@@ -14,10 +14,13 @@ public:
 	void SetUDPPort(sf::Uint16 port) { mUDPPort = port; }
 	const sf::Uint16 GetUDPPort() const { return mUDPPort; }
 
+	void SetConnectionIP(sf::Uint32 address) { mIPAdress = sf::IpAddress(address); }
+	const sf::IpAddress& GetIPAddress() const { return mIPAdress; }
+	const sf::Uint32 GetIPAddressU32() const { return mIPAdress.toInteger(); }
+
 	const sf::Uint16 GetNetworkID() const { return mNetworkID; }
 	void SetNetworkID(sf::Uint16 id) { mNetworkID = id; }
 
-	const sf::IpAddress& GetIPAddress() const { return mIPAdress; }
 
 	void SetInit(bool value) { mHasBeenInitialised = value; }
 	const bool HasBeenInit() const { return mHasBeenInitialised; }

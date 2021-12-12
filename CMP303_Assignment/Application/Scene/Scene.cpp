@@ -18,7 +18,7 @@ struct Compare
 };
 
 //Send 32 packets in 1 second.
-const double TICK_RATE = 1000.0f / 64.0f;
+const double TICK_RATE = 1.0f / 64.0f;
 
 Scene* Scene::mContext = nullptr;
 
@@ -118,14 +118,16 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 
 void Scene::Clean()
 {
-	if (mClient)
-	{
-		mClient->Disconnect();
-	}
+
 	//Clear the registery.
 	mActiveState->OnDetach();
 	//Set app to not update to avoid array access errors.
 	mActiveState->SetShouldUpdate(false);
+
+	if (mClient)
+	{
+		mClient->Disconnect();
+	}
 }
 
 void Scene::CreateClient(ClientPrivelage privelage)
@@ -151,6 +153,8 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 
 	//Delta time since last update.
 	mTimeElapsedSinceLastUpdate = mCurrentTimeOnUpdateNetwork - mLastTimeOnUpdateNetwork;
+
+	mTimeElapsedSinceLastUpdate /= 1000.0f;
 
 	//Is the period greater than our defined tick.
 	if (mTimeElapsedSinceLastUpdate >= TICK_RATE)
@@ -199,8 +203,8 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 			predictedPosition =
 			{
 				//Linearly interpolate between the last position and new position by 60%
-				Lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.8f),
-				Lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.8f)
+				Lerp(mRegistery.GetTransformComponent("shark").position.x, predictedPosition.x, 0.5f),
+				Lerp(mRegistery.GetTransformComponent("shark").position.y, predictedPosition.y, 0.5f)
 			};
 
 			GameData& recentPacket = gameDataRef.at(gameDataRef.size() - 1);
@@ -225,6 +229,17 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 			mLerp = 0.0f;
 		}
 	}
+
+	//If the other connection has quit remove their assets.
+	static_cast<HostState*>(mActiveState)->SetHasAssets(false);
+
+	if (mClient->GetHasClientQuit())
+	{
+		mRegistery.GetRendererComponent("shark").bShouldRenderSPR = false;
+		mRegistery.GetRendererComponent("shark").sprite.setScale(0.f, 0.f);
+		mRegistery.GetRendererComponent("shark").sprite.setPosition(0.f, 0.f);
+	}
+
 }
 
 void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
@@ -245,6 +260,8 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 
 	//Delta time since last tick.
 	mTimeElapsedSinceLastUpdate = mCurrentTimeOnUpdateNetwork - mLastTimeOnUpdateNetwork;
+
+	mTimeElapsedSinceLastUpdate /= 1000.0f;
 
 	//Is our current time elapsed greater than the defined period.
 	if (mTimeElapsedSinceLastUpdate >= TICK_RATE)
@@ -295,8 +312,8 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 				//Interpolate current position
 				predictedPosition.at(i) =
 				{
-					Lerp(mRegistery.GetTransformComponent(i).position.x, predictedPosition.at(i).x, 0.8f),
-					Lerp(mRegistery.GetTransformComponent(i).position.y, predictedPosition.at(i).y, 0.8f)
+					Lerp(mRegistery.GetTransformComponent(i).position.x, predictedPosition.at(i).x, 0.5f),
+					Lerp(mRegistery.GetTransformComponent(i).position.y, predictedPosition.at(i).y, 0.5f)
 				};
 
 
@@ -324,6 +341,18 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 			}
 
 			gameDataRef.resize(0);
+		}
+	}
+
+	//If the other connection has quit remove their assets.
+	if (mClient->GetHasClientQuit())
+	{
+		static_cast<ClientState*>(mActiveState)->SetHasAssets(false);
+		for (int i = 0; i < boidCount; ++i)
+		{
+			mRegistery.GetRendererComponent(i).bShouldRenderSPR = false;
+			mRegistery.GetRendererComponent(i).sprite.setScale(0.f, 0.f);
+			mRegistery.GetRendererComponent(i).sprite.setPosition(0.f, 0.f);
 		}
 	}
 }
@@ -368,25 +397,23 @@ const float Scene::Lerp(float a, float b, float t)
 void Scene::InitLatencyGraphic()
 {
 	mRegistery.AddNewEntity("Latency", { 0,0 }, { 32.f, 32.f }, 0, 79);
-	sf::Text& text = mRegistery.GetTextComponent("Latency").text;
-	sf::RectangleShape& shape = mRegistery.GetRendererComponent("Latency").graphics;
+	sf::Text* text = &mRegistery.GetTextComponent("Latency").text;
+	sf::RectangleShape* shape = &mRegistery.GetRendererComponent("Latency").graphics;
 	mRegistery.GetRendererComponent("Latency").bShouldRenderSPR = false;
 	sf::Font font;
 
 
 	font.loadFromFile("Assets/font.ttf");
-	text.setPosition(128.0f, 128.0f);
-	text.setCharacterSize(14.f);
-	text.setFillColor(sf::Color::White);
-	text.setOutlineColor(sf::Color::Black);
-	text.setOutlineThickness(1.2f);
-	text.setLetterSpacing(1.5f);
-	text.setString("Latency (ms)");
+	text->setFont(font);
+	text->setPosition(128.0f, 128.0f);
+	text->setCharacterSize(14.f);
+	text->setFillColor(sf::Color::White);
+	text->setOutlineColor(sf::Color::Black);
+	text->setOutlineThickness(1.2f);
+	text->setLetterSpacing(1.5f);
+	text->setString("Latency (ms)");
 
-	shape.setFillColor(sf::Color(0, 0, 0, 125));
-	shape.setPosition(128.0f, 128.0f);
-
-
-
+	shape->setFillColor(sf::Color(0, 0, 0, 125));
+	shape->setPosition(128.0f, 128.0f);
 	mInitLatencyGraphic = true;
 }

@@ -18,6 +18,7 @@ public:
 
 	void GenerateHostAssets();
 	const bool HasAssets() const { return mHasAssets; }
+	void SetHasAssets(bool value) { mHasAssets = value; }
 private:
 	void InitBackdrop();
 	bool QueryButton(Keyboard* keyboard);

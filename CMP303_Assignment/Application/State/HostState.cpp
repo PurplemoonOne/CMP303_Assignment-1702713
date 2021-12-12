@@ -19,7 +19,7 @@ void HostState::OnStart()
 	mScene->GetRegistery()->ReserveBuffer(80);
 
 	//Create the flock.
-	mFlock.CreateFlock(mScene, (mBoidCount = 64));
+	mFlock.CreateFlock(mScene, (mBoidCount = 32));
 
 	//Create graphics.
 	InitHomeButton();
@@ -59,11 +59,11 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 			//flip sprite
 			if ((angle > 270.f && angle < 360.f))
 			{
-				transform.scale = { 2.f, 2.f };
+				transform.scale = { -2.f, 2.f };
 			}
 			if ((angle > 360.0f && angle < 90.0f))
 			{
-				transform.scale = { 2.f, 2.f };
+				transform.scale = { -2.f, 2.f };
 			}
 			if ((angle > 90.0f && angle < 180.0f))
 			{
@@ -71,7 +71,7 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 			}
 			if ((angle > 180.0f) && (angle < 270.0f))
 			{
-				transform.scale = { -2.f, 2.f };
+				transform.scale = { 2.f, -2.f };
 			}
 
 			transform.rotation = angle;
@@ -234,15 +234,16 @@ void HostState::AlterBoidParameters(const float deltaTime, Keyboard* keyboard)
 void HostState::GenerateClientAssets()
 {
 	//Will wait until it has a valid pack of assets.
-	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromServer();
+	ConnectionData assets = mScene->GetClient()->RecieveAssetsDescFromClient();
 
 	if (assets.count > 0)
 	{
 		mSwordFishTexture.loadFromFile("Assets/fishGfx/swordfish.png");
 		mShark = Entity(mScene, "shark", &mSwordFishTexture, 65);
 		mShark.GetRenderer().bShouldRenderGFX = false;
-		mShark.GetRenderer().sprite.setScale({4.0f, 4.0f});
-		mShark.GetTransform().scale = { 4.0f, 4.0f };
+		mShark.GetRenderer().bShouldRenderSPR = true;
+		mShark.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeX });
+		mShark.GetTransform().scale = { assets.sizeX, assets.sizeX };
 		mHasAssets = true;
 	}
 }

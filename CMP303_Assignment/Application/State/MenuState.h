@@ -27,4 +27,6 @@ private:
 	sf::Texture mHostButtonTexture;
 	sf::Texture mHostButtonPressTexture;
 	sf::Vector2f mScreenDimensions;
+
+	bool mTexturesLoaded, mFontLoaded;
 };

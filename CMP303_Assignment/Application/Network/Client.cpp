@@ -138,7 +138,7 @@ void Client::BindUDPSockets()
 	//Bind the UDP socket to an available port.
 	if (mUDPSendSocket.bind(4444) != sf::UdpSocket::Done)
 	{
-		APP_TRACE("Could not bind to port {0}, fetching an unused port.", mUDPSendSocket.getLocalPort());
+		APP_TRACE("Could not bind to port {0}, fetching an unused port.", 4444);
 		//Try again using any port which is available, SFML will find an unused port.	
 		if (mUDPSendSocket.bind(sf::UdpSocket::AnyPort) != sf::UdpSocket::Done)
 		{
@@ -240,29 +240,25 @@ void Client::SendGamePacket(std::vector<sf::Vector2f>& positions, std::vector<fl
 	else
 	{
 		//Variables to write the port and ip address of the sender.
-		sf::IpAddress ipAddress = sf::IpAddress::getLocalAddress();
+		sf::IpAddress ipAddress;
 		sf::Uint16 port;
-		//Send data to peers.
-		if (mPeers.size() != 0)
+		//Send data to peer.
+		
+		ipAddress = sf::IpAddress(mPeer.ipAddress);
+		port = mPeer.port;
+		if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done)
 		{
-			for (auto& peer : mPeers)
-			{
-				port = peer;
-				if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done)
-				{
-					APP_ERROR("Could not send packet to peer on port {0} !", port);
-				}
-				else
-				{
-					APP_TRACE("PACKET SENT TO PORT : {0}", port);
-					if (heapAlloc)
-					{
-						//Delete local data from heap.
-						data.DeleteData();
-					}
-				}
-			}
+			APP_ERROR("Could not send packet to peer on port {0} !", port);
 		}
+		else
+		{
+			APP_TRACE("PACKET SENT TO PORT : {0}", port);
+			if (heapAlloc)
+			{
+				//Delete local data from heap.
+				data.DeleteData();
+			}
+		}		
 	}
 }
 
@@ -280,7 +276,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.y;
 		data.peerUdpRecvPort = mUDPRecvPort;
-
+		data.ipAddress = sf::IpAddress::getLocalAddress().toInteger();
 
 		if (!(packet << data))
 		{
@@ -306,6 +302,8 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.x;
 		data.peerUdpRecvPort = mUDPRecvPort;
+		data.ipAddress = sf::IpAddress::getLocalAddress().toInteger();
+
 		if (!(packet << data))
 		{
 			APP_ERROR("Peer : Failed to pack connection data.");
@@ -324,12 +322,12 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 	}
 }
 
-ConnectionData& Client::RecieveAssetsDescFromServer()
+ConnectionData& Client::RecieveAssetsDescFromClient()
 {
 	sf::Packet packet;
 	ConnectionData connData;
 	connData.count = 0;
-
+	Peer peer;
 	APP_TRACE("Gathering asset data...");
 
 	if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
@@ -347,9 +345,15 @@ ConnectionData& Client::RecieveAssetsDescFromServer()
 			mAssetCount = connData.count;
 			mAssetScale = connData.sizeX;
 
-			if (std::find(mPeers.begin(), mPeers.end(), connData.peerUdpRecvPort) == mPeers.end())
+			if (!(mPeer.port == connData.peerUdpRecvPort))
 			{
-				mPeers.push_back(connData.peerUdpRecvPort);
+				mPeer.port = connData.peerUdpRecvPort;
+				mPeer.ipAddress = connData.ipAddress;
+
+			}
+			else
+			{
+				APP_WARNING("Already have peer data.")
 			}
 		}
 	}
@@ -377,6 +381,7 @@ void Client::RecievePacket()
 			{
 				GameData recvData;
 				LatencyPacket recvLatencyData;
+				DisconnectPCKT recvDisconnectData;
 				if ((packet >> recvData))
 				{
 					APP_INFO("Recieved game update.");
@@ -389,6 +394,15 @@ void Client::RecievePacket()
 					mLatency = recvLatencyData.timeB - recvLatencyData.timeA;
 					mLatency *= 0.001; //Convert into seconds.
 				}
+				else if((packet >> recvDisconnectData))
+				{
+					if (recvDisconnectData.quit == 1)
+					{
+						APP_INFO("Client has left the game, cleaning assets...");
+
+						mClientQuit = true;
+					}
+				}
 				else
 				{
 					APP_ERROR("Unpacking data failed, unknown data recieved.");
@@ -399,11 +413,6 @@ void Client::RecievePacket()
 	else
 	{
 		APP_TRACE("Wait time out...");
-
-		if (mPeers.size() != 0)
-		{
-
-		}
 
 	}
 }
@@ -422,7 +431,7 @@ void Client::StoreGameUpdate(const GameData& data)
 	if (!invalid)
 	{
 		//Does the port match current records of port numbers...?
-		if(std::find(mPeers.begin(), mPeers.end(), data.peerUdpRecvPort) == mPeers.end())
+		if (mPeer.port != data.peerUdpRecvPort)
 		{
 			APP_WARNING("Packet tampered! Invalid port number! Discarding data...");
 			invalid = true;
@@ -437,12 +446,11 @@ void Client::StoreGameUpdate(const GameData& data)
 			//If we're in the boundaries of the level we have partly a valid packet.
 			bool validateX = (data.x[i] > 0.f && data.x[i] < mWindowMaxBoundary.x);
 			bool validateY = (data.y[i] > 0.f && data.y[i] < mWindowMaxBoundary.y);
-			//Check rotations are valid.
-			bool validateRotation = (data.rotations[i] >= 0.0f && data.rotations[i] <= 360.0f) ? true : false;
+
 			//If the ID and index match we have a valid ID for this asset.
 			bool validID = (data.objectIDs[i] == i);
 			//All must pass the previous tests to be considered.
-			if (!(validateX && validateY && validID && validateRotation))
+			if (!(validateX && validateY && validID))
 			{
 				APP_WARNING("Packet tampered! Invalid position and/or ID! Discarding data...");
 				invalid = true;
@@ -536,17 +544,23 @@ bool Client::Disconnect()
 		if (mTCPSocket.send(packet) != sf::TcpSocket::Done)
 		{
 			APP_ERROR("Could not disconnect from server gracefully......");
-			mTCPSocket.disconnect();
-			mUDPSendSocket.unbind();
-			mUDPRecvSocket.unbind();
 		}
 		else
 		{
-			mTCPSocket.disconnect();
-			mUDPSendSocket.unbind();
-			mUDPRecvSocket.unbind();
 			returnStatus = true;
 		}
+
+		
+			sf::IpAddress ipAddress = sf::IpAddress(mPeer.ipAddress);
+			sf::Uint16 port = mPeer.port;
+			if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done);
+			{
+				APP_ERROR("Could not let client know we are disconnecting...");
+			}
+			mPeer.ipAddress = 0;
+			mPeer.port = 0;
+		
+	
 	}
 	return returnStatus;
 }

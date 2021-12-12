@@ -2,6 +2,12 @@
 #include "NetworkUtilities.h"
 #include "SFML/Graphics/Text.hpp"
 
+struct Peer
+{
+	sf::Uint32 ipAddress;
+	sf::Uint16 port;
+};
+
 class Client
 {
 public:
@@ -15,7 +21,7 @@ public:
 	void SendConnectionInformation(AssetType assetType = 0, AssetCount assetCount = 0, sf::Vector2f assetSize = sf::Vector2f());
 
 	// @brief Recieve game assets from the server.
-	ConnectionData& RecieveAssetsDescFromServer();
+	ConnectionData& RecieveAssetsDescFromClient();
 
 	// @brief Recieve a packet from other peers.
 	void RecievePacket();
@@ -27,7 +33,6 @@ public:
 	bool Disconnect();
 
 	std::vector<GameData>& GetGameData() { return mGameData; }
-	const sf::Uint32 GetPeerCount() const { return mPeers.size(); }
 	const sf::Vector2f GetPredictedPosition() const { return mPredictedPositions.back(); }
 	
 public:
@@ -41,8 +46,8 @@ public:
 	// @brief Grabs the most up to date latency peformance.
 	const float GetRecentLatency() const { return mLatency; }
 
-	// @breif Grabs the most up to date jitter peformance.
-	const float GetRecentJitter() const { return mJitter; }
+	// @brief Check if the client has left the game.
+	bool GetHasClientQuit() const { return mClientQuit; }
 	
 private:
 
@@ -73,8 +78,8 @@ private:
 	// @brief Clients privelage
 	ClientPrivelage mPrivelage;
 
-	// @brief An array of all the ports and Ip address to send game updates to.
-	std::vector<sf::Uint16> mPeers;
+	// @brief Object representing the other connection.
+	Peer mPeer;
 
 	// @brief An array holding game updates.
 	std::vector<GameData> mGameData;
@@ -96,5 +101,6 @@ private:
 	// connection recieving the packet.
 	float mLatency;
 
-	float mJitter;
+	bool mClientQuit = false;
+
 };
