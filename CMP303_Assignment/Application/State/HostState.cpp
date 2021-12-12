@@ -92,7 +92,7 @@ void HostState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 		APP_TRACE("Disconnecting from server....");
 		if (mScene->GetClient()->Disconnect())
 		{
-			mHasAssets = false;
+			mHasGameAssets = false;
 			delete mScene->GetClient();
 			mScene->TransitionState("menu");
 		}
@@ -244,7 +244,7 @@ void HostState::GenerateClientAssets()
 		mShark.GetRenderer().bShouldRenderSPR = true;
 		mShark.GetRenderer().sprite.setScale({ assets.sizeX, assets.sizeX });
 		mShark.GetTransform().scale = { assets.sizeX, assets.sizeX };
-		mHasAssets = true;
+		mHasGameAssets = true;
 	}
 }
 

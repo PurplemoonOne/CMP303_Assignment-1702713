@@ -19,7 +19,7 @@ sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 
 sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 {
-	packet >> data.systemTime >> data.peerUdpRecvPort >> data.arraySize;
+	packet >> data.systemTime >> data.peerUdpRecvPort >> data.peerIpAddress >> data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
 	if (count < 256)
@@ -56,7 +56,7 @@ sf::Packet& operator >>(sf::Packet& packet, GameData& data)
 
 sf::Packet& operator <<(sf::Packet& packet, const GameData& data)
 {
-	packet  << data.systemTime << data.peerUdpRecvPort << data.arraySize;
+	packet  << data.systemTime << data.peerUdpRecvPort << data.peerIpAddress << data.arraySize;
 
 	sf::Uint32 count = data.arraySize;
 
@@ -186,12 +186,9 @@ void Client::ConnectToServer()
 	{
 		APP_TRACE("Connected to server.");
 
-
-		//Set the sockets to not block the application.
-		mTCPSocket.setBlocking(false);
-
 		//Add the reciece UDP socket to the select.
 		mSelect.add(mUDPRecvSocket);
+		mSelect.add(mTCPSocket);
 		mUDPSendSocket.setBlocking(false);
 	}
 }
@@ -330,38 +327,45 @@ ConnectionData& Client::RecieveAssetsDescFromClient()
 	Peer peer;
 	APP_TRACE("Gathering asset data...");
 
-	if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
+	if (mSelect.wait(sf::milliseconds(16)))
 	{
-		APP_ERROR("Recieve failed! : RecieveHostAssets()");
-	}
-	else
-	{
-		if (!(packet >> connData))
+		if (mSelect.isReady(mTCPSocket))
 		{
-			APP_ERROR("Data unpack failed! : RecieveHostAssets()");
-		}
-		else
-		{
-			mAssetCount = connData.count;
-			mAssetScale = connData.sizeX;
-
-			if (!(mPeer.port == connData.peerUdpRecvPort))
+			if (mTCPSocket.receive(packet) != sf::TcpSocket::Done)
 			{
-				mPeer.port = connData.peerUdpRecvPort;
-				mPeer.ipAddress = connData.ipAddress;
-
+				APP_ERROR("Recieve failed! : RecieveHostAssets()");
 			}
 			else
 			{
-				APP_WARNING("Already have peer data.")
+				if (!(packet >> connData))
+				{
+					APP_ERROR("Data unpack failed! : RecieveHostAssets()");
+				}
+				else
+				{
+					mAssetCount = connData.count;
+					mAssetScale = connData.sizeX;
+
+					if (!(mPeer.port == connData.peerUdpRecvPort))
+					{
+						mPeer.port = connData.peerUdpRecvPort;
+						mPeer.ipAddress = connData.ipAddress;
+
+					}
+					else
+					{
+						APP_WARNING("Already have peer data.")
+					}
+				}
 			}
 		}
 	}
+
 
 	return connData;
 }
 
-void Client::RecievePacket()
+void Client::RecieveGameUpdate()
 {
 	if (mSelect.wait(sf::milliseconds(16.0f)))
 	{
@@ -384,6 +388,7 @@ void Client::RecievePacket()
 				DisconnectPCKT recvDisconnectData;
 				if ((packet >> recvData))
 				{
+					//Store the game update and runa security check on the data.
 					APP_INFO("Recieved game update.");
 					StoreGameUpdate(recvData);
 				}
@@ -400,7 +405,7 @@ void Client::RecievePacket()
 					{
 						APP_INFO("Client has left the game, cleaning assets...");
 
-						mClientQuit = true;
+						mPeerQuit = true;
 					}
 				}
 				else
@@ -510,7 +515,7 @@ void Client::StoreGameUpdate(const GameData& data)
 		else
 		{
 			sf::Uint16 returnToSenderPort = data.peerUdpRecvPort;
-			sf::IpAddress ipAddress = MACHINE_LOCAL_IP;
+			sf::IpAddress ipAddress = sf::IpAddress(data.peerIpAddress);
 			//Already have valid port number and ip address from the connection.
 			if (mUDPSendSocket.send(latencyPacket, ipAddress, returnToSenderPort) != sf::UdpSocket::Done)
 			{
@@ -549,18 +554,15 @@ bool Client::Disconnect()
 		{
 			returnStatus = true;
 		}
-
 		
-			sf::IpAddress ipAddress = sf::IpAddress(mPeer.ipAddress);
-			sf::Uint16 port = mPeer.port;
-			if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done);
-			{
-				APP_ERROR("Could not let client know we are disconnecting...");
-			}
-			mPeer.ipAddress = 0;
-			mPeer.port = 0;
-		
-	
+		sf::IpAddress ipAddress = sf::IpAddress(mPeer.ipAddress);
+		sf::Uint16 port = mPeer.port;
+		if (mUDPSendSocket.send(packet, ipAddress, port) != sf::UdpSocket::Done);
+		{
+			APP_ERROR("Could not let client know we are disconnecting...");
+		}
+		mPeer.ipAddress = 0;
+		mPeer.port = 0;
 	}
 	return returnStatus;
 }

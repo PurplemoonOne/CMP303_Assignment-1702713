@@ -24,7 +24,15 @@ public:
 
 	const bool Update() const { return mUpdate; }
 
+	void SetHasAssets(bool value)
+	{
+		mHasGameAssets = value;
+	}
+
+	const bool HasGameAssets() { return mHasGameAssets; }
+
 protected:
 	Scene* mScene;
 	bool mUpdate = true;
+	bool mHasGameAssets = false;
 };

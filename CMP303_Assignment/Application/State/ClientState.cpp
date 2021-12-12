@@ -5,8 +5,7 @@
 
 ClientState::ClientState(sf::Vector2f screenDimensions)
 	:
-	mScreenDimensions(screenDimensions),
-	mHasAssets(false)
+	mScreenDimensions(screenDimensions)
 {
 }
 
@@ -80,7 +79,7 @@ void ClientState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard
 		APP_TRACE("Disconnecting from server....");
 		if (mScene->GetClient()->Disconnect())
 		{
-			mHasAssets = false;
+			mHasGameAssets = false;
 			delete mScene->GetClient();
 			mScene->TransitionState("menu");
 		}
@@ -118,7 +117,7 @@ void ClientState::GenerateHostAssets()
 			entity.GetTransform().scale = { assets.sizeX, assets.sizeY };
 		}
 		mBoidCount = assets.count;
-		mHasAssets = true;
+		mHasGameAssets = true;
 	}
 }
 

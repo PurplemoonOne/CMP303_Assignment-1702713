@@ -24,7 +24,7 @@ public:
 	ConnectionData& RecieveAssetsDescFromClient();
 
 	// @brief Recieve a packet from other peers.
-	void RecievePacket();
+	void RecieveGameUpdate();
 
 	// @brief Establish a connection with the server.
 	void ConnectToServer();
@@ -47,7 +47,7 @@ public:
 	const float GetRecentLatency() const { return mLatency; }
 
 	// @brief Check if the client has left the game.
-	bool GetHasClientQuit() const { return mClientQuit; }
+	bool GetHasClientQuit() const { return mPeerQuit; }
 	
 private:
 
@@ -101,6 +101,6 @@ private:
 	// connection recieving the packet.
 	float mLatency;
 
-	bool mClientQuit = false;
+	bool mPeerQuit = false;
 
 };

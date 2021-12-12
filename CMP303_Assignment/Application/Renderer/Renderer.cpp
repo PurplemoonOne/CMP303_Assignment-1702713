@@ -22,6 +22,7 @@ void Renderer::Submit(const std::vector<RendererComponent>& objects, const std::
 		}
 	}
 
+
 	for (auto& drawable : objects)
 	{
 		if (drawable.bShouldRenderGFX)
@@ -29,6 +30,7 @@ void Renderer::Submit(const std::vector<RendererComponent>& objects, const std::
 			window->draw(drawable.graphics);
 		}
 	}
+
 
 	for (auto& text : texts)
 	{

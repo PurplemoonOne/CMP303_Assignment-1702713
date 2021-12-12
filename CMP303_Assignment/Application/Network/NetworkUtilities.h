@@ -40,6 +40,7 @@ struct GameData : public BaseData
 	}
 
 	sf::Uint16 peerUdpRecvPort;
+	sf::Uint32 peerIpAddress;
 	sf::Uint32 arraySize;
 	sf::Uint32* objectIDs; 
 	float* x;

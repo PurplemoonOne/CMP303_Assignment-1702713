@@ -89,6 +89,17 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 		if (mActiveState != nullptr)
 			mActiveState->OnUpdate(time, appElapsedTime, keyboard, gamepad);
 
+		//Host code.
+		if (mActiveState == mStates["host"])
+		{
+			HostNetworking(time, appElapsedTime);
+		}
+		else if (mActiveState == mStates["client"])
+		{
+			ClientNetworking(time, appElapsedTime);
+		}
+
+
 		//Create out latency graphics.
 		if (!mInitLatencyGraphic)
 		{
@@ -102,15 +113,15 @@ void Scene::UpdateActiveState(const float time, const float appElapsedTime, Keyb
 			mInitLatencyGraphic = false;
 		}
 
-		//Host code.
-		if (mActiveState == mStates["host"])
+		if (mInitLatencyGraphic)
 		{
-			HostNetworking(time, appElapsedTime);
+			sf::Text* text = &mRegistery.GetTextComponent("Latency").text;
+
+			//Update current latency
+			sf::String latency = "Latency " + std::to_string(mClient->GetRecentLatency()) + " ms";
+			text->setString(latency);
 		}
-		else if (mActiveState == mStates["client"])
-		{
-			ClientNetworking(time, appElapsedTime);
-		}
+
 
 		mRenderer.Submit(mRegistery.GetRendererComponents(), mRegistery.GetTextComponents());
 	}
@@ -141,7 +152,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 	//Host sends data about boid.
 	sf::Uint32 boidCount = static_cast<HostState*>(mActiveState)->GetBoidCount();
 
-	bool hasAssets = static_cast<HostState*>(mActiveState)->HasAssets();
+	bool hasAssets = mActiveState->HasGameAssets();
 
 	if (!hasAssets)
 	{
@@ -177,7 +188,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 	}
 	
 	//Recieve packets from the client.
-	mClient->RecievePacket();
+	mClient->RecieveGameUpdate();
 
 	if (hasAssets)
 	{
@@ -230,14 +241,12 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 		}
 	}
 
-	//If the other connection has quit remove their assets.
-	static_cast<HostState*>(mActiveState)->SetHasAssets(false);
-
 	if (mClient->GetHasClientQuit())
 	{
 		mRegistery.GetRendererComponent("shark").bShouldRenderSPR = false;
 		mRegistery.GetRendererComponent("shark").sprite.setScale(0.f, 0.f);
 		mRegistery.GetRendererComponent("shark").sprite.setPosition(0.f, 0.f);
+		mActiveState->SetHasAssets(false);
 	}
 
 }
@@ -245,7 +254,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 {
 	//Client code	
-	bool hasAssets = static_cast<ClientState*>(mActiveState)->HasAssets();
+	bool hasAssets = mActiveState->HasGameAssets();
 
 	if (!hasAssets)
 	{
@@ -281,7 +290,7 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 		mClient->SendGamePacket(position, rotations, scales);
 	}
 
-	mClient->RecievePacket();
+	mClient->RecieveGameUpdate();
 
 	//If the client has the hosts assets....
 	if (hasAssets)
@@ -347,7 +356,8 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 	//If the other connection has quit remove their assets.
 	if (mClient->GetHasClientQuit())
 	{
-		static_cast<ClientState*>(mActiveState)->SetHasAssets(false);
+		mActiveState->SetHasAssets(false);
+
 		for (int i = 0; i < boidCount; ++i)
 		{
 			mRegistery.GetRendererComponent(i).bShouldRenderSPR = false;
@@ -397,14 +407,15 @@ const float Scene::Lerp(float a, float b, float t)
 void Scene::InitLatencyGraphic()
 {
 	mRegistery.AddNewEntity("Latency", { 0,0 }, { 32.f, 32.f }, 0, 79);
+	mRegistery.GetTextComponent("Latency").bInit = true;
 	sf::Text* text = &mRegistery.GetTextComponent("Latency").text;
 	sf::RectangleShape* shape = &mRegistery.GetRendererComponent("Latency").graphics;
 	mRegistery.GetRendererComponent("Latency").bShouldRenderSPR = false;
-	sf::Font font;
+	
 
 
-	font.loadFromFile("Assets/font.ttf");
-	text->setFont(font);
+	mLatencyFont.loadFromFile("Assets/font.ttf");
+	text->setFont(mLatencyFont);
 	text->setPosition(128.0f, 128.0f);
 	text->setCharacterSize(14.f);
 	text->setFillColor(sf::Color::White);
@@ -412,8 +423,10 @@ void Scene::InitLatencyGraphic()
 	text->setOutlineThickness(1.2f);
 	text->setLetterSpacing(1.5f);
 	text->setString("Latency (ms)");
+	
 
 	shape->setFillColor(sf::Color(0, 0, 0, 125));
 	shape->setPosition(128.0f, 128.0f);
+	shape->setSize({ 256.0f, 32.0f });
 	mInitLatencyGraphic = true;
 }

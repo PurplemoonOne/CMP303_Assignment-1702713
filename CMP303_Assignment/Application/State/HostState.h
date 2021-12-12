@@ -45,8 +45,6 @@ public:
 	sf::Uint32 GetBoidCount() const { return mBoidCount; }
 
 	void GenerateClientAssets();
-	const bool HasAssets() const { return mHasAssets; }
-	void SetHasAssets(bool value) { mHasAssets = value; }
 
 private:
 	virtual void OnStart() override;
@@ -85,8 +83,6 @@ private:
 	sf::Vector2f mScreenDimensions;
 	sf::Uint32 mBoidCount = 0;
 
-	//Network
-	bool mHasAssets = false;
 
 private:
 	// @brief Simple functions to calculate the rules of a boid.

@@ -17,8 +17,7 @@ public:
 	virtual void OnDetach() override;
 
 	void GenerateHostAssets();
-	const bool HasAssets() const { return mHasAssets; }
-	void SetHasAssets(bool value) { mHasAssets = value; }
+
 private:
 	void InitBackdrop();
 	bool QueryButton(Keyboard* keyboard);
@@ -43,7 +42,6 @@ private:
 	Entity mHomeButton;
 	sf::Texture mHomeButtonTexture;
 	sf::Texture mHomeButtonPressTexture;
-	bool mHasAssets = false;
 
 	bool mUpdatePosition = true;
 //Utility functions	

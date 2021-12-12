@@ -51,6 +51,7 @@ private:
 	double mLastTimeOnUpdateNetwork = 0.0;
 
 private:
+	sf::Font mLatencyFont;
 	Renderer mRenderer;
 	Registery mRegistery;
 	State* mActiveState;
