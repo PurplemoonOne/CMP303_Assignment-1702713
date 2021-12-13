@@ -7,13 +7,9 @@ const sf::IpAddress MACHINE_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
 
 Server::Server()
-	:
-	mHasHostAssets(false),
-	mHasClientAssets(false)
 {
 	//Initialise log system.
 	ServerLog::Init();
-	mConnections.fill(nullptr);
 }
 
 Server::~Server()
@@ -76,113 +72,111 @@ void Server::QueryConnections()
 
 	if (mSelect.wait(sf::milliseconds(16.0f)))
 	{
-		//Read newly messages and or requests to leave the stream.
+		//Read requests to leave the stream.
 		for (sf::Uint32 i = 0; i < mConnections.size(); ++i)
 		{
-			//Element 0 is reserved for host. Hence element 0 is NULL if no host.
-			if (mConnections.at(i) != nullptr)
+			Game& gameRef = mConnections.at(i);
+			Connection* connection = nullptr;
+			sf::TcpSocket* socket = nullptr;
+			DisconnectPCKT data;
+			if (gameRef.mHost != nullptr)
 			{
-				if (mSelect.isReady(*mConnections.at(i)->GetTCPSocket()))
+				connection = gameRef.mHost;
+				socket = connection->GetTCPSocket();
+				if (mSelect.isReady(*socket))
 				{
-					DisconnectPCKT data;
-					mConnections.at(i)->RecieveTCP(data);
-
+					connection->UnpackData(data);
 					if (data.quit == 1)
 					{
-						//Tell the other connection that the host/client has left.
-						if (data.message == '0')
-						{
-							if (mConnections.at(1) != nullptr)
-							{
-								mConnections.at(1)->SendTCP(data);
-							}
-							RemoveConnection(0);
-						}
-						else
-						{
-							if (mConnections.at(0) != nullptr)
-							{					
-								mConnections.at(0)->SendTCP(data);
-							}
-							RemoveConnection(1);
-						}
+						mSelect.remove(*connection->GetTCPSocket());
+						connection->GetTCPSocket()->disconnect();
+						delete gameRef.mHost;
+						gameRef.mHost = nullptr;
+						gameRef.mHasHost = false;
+						gameRef.mHasHostAssets = false;
+					}
+				}
+			}
+			if(gameRef.mClient != nullptr)
+			{
+				connection = gameRef.mClient;
+				socket = connection->GetTCPSocket();
+
+				if (mSelect.isReady(*connection->GetTCPSocket()))
+				{
+					connection->UnpackData(data);
+					if (data.quit == 1)
+					{
+						mSelect.remove(*connection->GetTCPSocket());
+						connection->GetTCPSocket()->disconnect();
+						delete gameRef.mClient;
+						gameRef.mClient = nullptr;
+						gameRef.mHasClient = false;
+						gameRef.mHasClientAssets = false;
+					}
 					
-						
-						break;
+				}
+			}
+		}
+	}
+
+	for (auto& game : mConnections)
+	{
+		if (game.mHasHostAssets)
+		{
+			if (game.mClient != nullptr)
+			{
+				if (!game.mClient->HasAssets())
+				{
+					if (game.mClient->SendAssets(game.mHostAssets))
+					{
+						game.mClient->SetHasAssets(true);
+					}
+				}
+			}
+		}
+
+		if (game.mHasClientAssets)
+		{
+			if (game.mHost != nullptr)
+			{
+				if (!game.mHost->HasAssets())
+				{
+					if (game.mHost->SendAssets(game.mClientAssets))
+					{
+						game.mHost->SetHasAssets(true);
 					}
 				}
 			}
 		}
 	}
 
-	if (mConnections.at(1) != nullptr)
-	{
-		if (!mConnections.at(1)->HasAssets())
-		{
-			if (mHasHostAssets && !(mConnections.at(1)->HasAssets()))
-			{
-				if (mConnections.at(1)->SendAssets(mHostAssets))
-				{
-					mConnections.at(1)->SetHasAssets(true);
-				}
-			}
-		}
-	}
-	if (mConnections.at(0) != nullptr)
-	{
-		if (!mConnections.at(0)->HasAssets())
-		{
-			if (mHasClientAssets && !(mConnections.at(0)->HasAssets()))
-			{
-				if (mConnections.at(0)->SendAssets(mClientAssets))
-				{
-					mConnections.at(0)->SetHasAssets(true);
-				}
-			}
-		}
-	}
-}
-
-
-void Server::RemoveConnection(sf::Uint32 element)
-{
-	sf::Uint16 port = mConnections.at(element)->GetTCPPort();
-	sf::IpAddress ipAddress = mConnections.at(element)->GetIPAddress();
-
-	//Host has left...
-	if (element == 0)
-	{
-		mHasHostAssets = false;
-		mHostCount--;
-	}
-	//Client has left.
-	else
-	{
-		mHasClientAssets = false;
-		mClientCount--;
-	}
-
-	mTotalConnections--;
-
-	//Remove the reference to the socket from the select object.
-	mSelect.remove(*mConnections.at(element)->GetTCPSocket());
-
-	//Close the TCP socket.
-	mConnections.at(element)->GetTCPSocket()->disconnect();
-
-	//Delete the socket object from the heap.
-	delete mConnections.at(element)->GetTCPSocket();
-	delete mConnections.at(element);
-	mConnections.at(element) = nullptr;
-
-	if (element == 0)
-	{
-		APP_TRACE("Host on port {0} : IP Adreess {1} has left.", port, ipAddress.toString());
-	}
-	else
-	{
-		APP_TRACE("Client on port {0} : IP Adreess {1} has left.", port, ipAddress.toString());
-	}
+//	if (mConnections.at(1) != nullptr)
+//	{
+//		if (!mConnections.at(1)->HasAssets())
+//		{
+//			if (mHasHostAssets && !(mConnections.at(1)->HasAssets()))
+//			{
+//				if (mConnections.at(1)->SendAssets(mHostAssets))
+//				{
+//					mConnections.at(1)->SetHasAssets(true);
+//				}
+//			}
+//		}
+//	}
+//	if (mConnections.at(0) != nullptr)
+//	{
+//		if (!mConnections.at(0)->HasAssets())
+//		{
+//			if (mHasClientAssets && !(mConnections.at(0)->HasAssets()))
+//			{
+//				if (mConnections.at(0)->SendAssets(mClientAssets))
+//				{
+//					mConnections.at(0)->SetHasAssets(true);
+//				}
+//			}
+//		}
+//	}
 }
 
 void Server::InitConnection(sf::TcpSocket* socket)
@@ -205,9 +199,18 @@ void Server::InitConnection(sf::TcpSocket* socket)
 		connection->SetConnectionIP(connectionData.ipAddress);
 		connection->SetHasAssets(false);
 		mSelect.add(*connection->GetTCPSocket());
-		mConnections.at(0) = connection;
 
-		StoreAssetData(connectionData);
+		for (int i = 0; i < mConnections.size(); ++i)
+		{
+			Game& gameRef = mConnections.at(i);
+			if (!gameRef.mHasHost)
+			{
+				gameRef.mHost = connection;	
+				gameRef.StoreAssetData(connectionData);
+				gameRef.mHasHost = true;
+				break;
+			}
+		}
 		
 		APP_TRACE("Storing host asset description.");
 
@@ -227,47 +230,28 @@ void Server::InitConnection(sf::TcpSocket* socket)
 		connection->SetInit(true);
 		connection->SetHasAssets(false);
 		connection->SetConnectionIP(connectionData.ipAddress);
-		mConnections.at(1) = connection;
 		mSelect.add(*connection->GetTCPSocket());
-		StoreAssetData(connectionData);
+		
 		APP_TRACE("Storing client asset description.");
 
+		for (int i = 0; i < mConnections.size(); ++i)
+		{
+			Game& gameRef = mConnections.at(i);
+			if (!gameRef.mHasClient)
+			{
+				gameRef.mClient = connection;
+				gameRef.StoreAssetData(connectionData);
+				gameRef.mHasClient = true;
+				break;
+			}
+		}
 		mClientCount++;
 		mTotalConnections++;
 	}
 
-	//Something went wrong.
-	else
-	{
-		delete connection;
-		connection = nullptr;
-		APP_WARNING("Unknown entity has joined... Resolving.");
-	}
+
 }
 
-void Server::StoreAssetData(ConnectionData& data)
-{
-	if (data.privelage == 0)
-	{
-		mHostAssets.count = data.count;
-		mHostAssets.type = data.type;
-		mHostAssets.sizeX = data.sizeX;
-		mHostAssets.sizeY = data.sizeY;
-		mHostAssets.ipAddress = data.ipAddress;
-		mHostAssets.peerUdpRecvPort = data.peerUdpRecvPort;
-		mHasHostAssets = true;
-	}
-	else
-	{
-		mClientAssets.count = data.count;
-		mClientAssets.type = data.type;
-		mClientAssets.sizeX = data.sizeX;
-		mClientAssets.sizeY = data.sizeY;
-		mClientAssets.ipAddress = data.ipAddress;
-		mClientAssets.peerUdpRecvPort = data.peerUdpRecvPort;
-		mHasClientAssets = true;
-	}
-}
 
 void Server::Run()
 {
@@ -276,7 +260,7 @@ void Server::Run()
 	sf::Clock clock;
 
 	//Windows window used for rendering mGraphics to the screen.
-	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Server");
+	sf::RenderWindow window(sf::VideoMode(640, 480), "Server");
 
 	float appElapsedTime = 0.f;
 
@@ -296,9 +280,9 @@ void Server::Run()
 		//Process the event queue.
 		ProcessEvents(window);
 
-		window.clear(sf::Color(125, 125, 125, 255));
+		//window.clear(sf::Color(125, 125, 125, 255));
 
-		window.display();
+		//window.display();
 
 		appElapsedTime += 1.f * elapsed.asSeconds();
 	}

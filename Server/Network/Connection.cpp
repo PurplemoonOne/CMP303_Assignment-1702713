@@ -6,12 +6,12 @@
 
 sf::Packet& operator >>(sf::Packet& packet, DisconnectPCKT& data)
 {
-	return packet >> data.systemTime >> data.message >> data.id >> data.quit;
+	return packet >> data.systemTime >> data.latency >> data.message >> data.id >> data.quit;
 }
 
 sf::Packet& operator <<(sf::Packet& packet, const DisconnectPCKT& data)
 {
-	return packet << data.systemTime << data.message << data.id << data.quit;
+	return packet << data.systemTime << data.latency << data.message << data.id << data.quit;
 }
 
 sf::Packet& operator >>(sf::Packet& packet,  ConnectionData& data)
@@ -112,24 +112,23 @@ void Connection::SendTCP(ClientPortAndIP& data)
 	}
 }
 
-void Connection::RecieveTCP(DisconnectPCKT& message)
+void Connection::UnpackData(DisconnectPCKT&  data)
 {
 	sf::Packet packet;
 
 	if (mTCPSocket->receive(packet) != sf::TcpSocket::Done)
 	{
-		APP_ERROR("TCP recieve failed : RecieveTCP() ~ DisconnectPCKT& ");
-
+		APP_ERROR("Failed to recieve!");
 	}
 	else
 	{
-		if (!(packet >> message))
+		if (!(packet >> data))
 		{
-			APP_ERROR("TCP packing failed : RecieveTCP() ~ DisconnectPCKT& ");
+			APP_WARNING("Unpacking connection data failed...");
 		}
 		else
 		{
-			APP_TRACE("Connection has requested to quit.");
+			APP_TRACE("Successfully recieved a TCP packet from the server.")
 		}
 	}
 }

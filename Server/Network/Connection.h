@@ -34,7 +34,7 @@ public:
 	void SendTCP(ClientPortAndIP& data);
 
 	// @brief Recieve TCP messages from connections.
-	void RecieveTCP(DisconnectPCKT& message);
+	void UnpackData(DisconnectPCKT& data);
 	void RecieveAssets(ConnectionData& data);
 	void RecieveTCP(ClientPortAndIP& data);
 
