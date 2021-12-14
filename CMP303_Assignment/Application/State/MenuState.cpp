@@ -27,9 +27,21 @@ void MenuState::OnStart()
 
 		mClientButtonTexture.loadFromFile("Assets/client.png");
 		mClientButtonPressTexture.loadFromFile("Assets/clientC.png");
+		mFont.loadFromFile("Assets/font.ttf");
 		mTexturesLoaded = true;
 	}
 
+	mServerIpText = Entity(mScene, "IpText", 0, 79);
+	mServerIpText.GetRenderer().bShouldRenderSPR = false;
+	mServerIpText.GetRenderer().graphics.setSize({ 256.0f, 36.0 });
+	mServerIpText.GetRenderer().graphics.setFillColor(sf::Color(125, 125, 125, 125));
+	mServerIpText.GetRenderer().graphics.setPosition({ (mScreenDimensions.x * 0.2f) - 256.0f, mScreenDimensions.y - 128.0f });
+	mServerIpText.GetText().text.setFont(mFont);
+	mServerIpText.GetText().text.setPosition({ (mScreenDimensions.x * 0.2f) - 256.0f, mScreenDimensions.y - 128.0f });
+	mServerIpText.GetText().text.setCharacterSize(32.0f);
+	mServerIpText.GetText().text.setFillColor(sf::Color::White);
+	mServerIpText.GetText().text.setOutlineColor(sf::Color::Black);
+	mServerIpText.GetText().bInit = true;
 
 	//Load font
 	mHostButton = Entity(mScene, "Host", &mHostButtonTexture, 0);
@@ -74,6 +86,8 @@ void MenuState::OnStart()
 //	mClientButton.GetText().text.setPosition(mClientButton.GetRenderer().graphics.getPosition());
 
 	InitBackdrop();
+
+	
 }
 
 void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* keyboard, Gamepad* gamepad)
@@ -90,40 +104,53 @@ void MenuState::OnUpdate(float deltaTime, const float appElapsedTime, Keyboard* 
 	sf::Vector2f spectateButtonC00 = mClientButton.GetRenderer().graphics.getPosition();
 	sf::Vector2f spectateButtonC11 = mClientButton.GetRenderer().graphics.getPosition() + (mClientButton.GetRenderer().graphics.getSize());
 
-	//Check if mouse if hovering over button.
-	if ((mouseX > streamButtonC00.x && mouseX < streamButtonC11.x) && (mouseY > streamButtonC00.y && mouseY < streamButtonC11.y))
+	if (mValidAddress)
 	{
-		mHostButton.GetRenderer().sprite.setTexture(mHostButtonPressTexture);
-		mHostButton.GetRenderer().sprite.setColor(sf::Color(255,255,255,255));
-
-		if (keyboard->MouseLeftButtonDown())
+		//Check if mouse if hovering over button.
+		if ((mouseX > streamButtonC00.x && mouseX < streamButtonC11.x) && (mouseY > streamButtonC00.y && mouseY < streamButtonC11.y))
 		{
-			mScene->CreateClient(ClientPrivelage::Host);
-			bHostState = true;
-		}
-	}
-	else
-	{
-		mHostButton.GetRenderer().sprite.setTexture(mHostButtonTexture);
-		mHostButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
-	}
+			mHostButton.GetRenderer().sprite.setTexture(mHostButtonPressTexture);
+			mHostButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 255));
 
-	if ((mouseX > spectateButtonC00.x && mouseX < spectateButtonC11.x) && (mouseY > spectateButtonC00.y && mouseY < spectateButtonC11.y))
-	{
-		mClientButton.GetRenderer().sprite.setTexture(mClientButtonPressTexture);
-		mClientButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 255));
-		if (keyboard->MouseLeftButtonDown())
+			if (keyboard->MouseLeftButtonDown())
+			{
+				mScene->CreateClient(ClientPrivelage::Host);
+				mScene->GetClient()->SetServerAddress(mIpAddress);
+				bHostState = true;
+			}
+		}
+		else
 		{
-			mScene->CreateClient(ClientPrivelage::Client);
-			bClientState = true;
+			mHostButton.GetRenderer().sprite.setTexture(mHostButtonTexture);
+			mHostButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
 		}
-	}
-	else
-	{
-		mClientButton.GetRenderer().sprite.setTexture(mClientButtonTexture);
-		mClientButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
+
+		if ((mouseX > spectateButtonC00.x && mouseX < spectateButtonC11.x) && (mouseY > spectateButtonC00.y && mouseY < spectateButtonC11.y))
+		{
+			mClientButton.GetRenderer().sprite.setTexture(mClientButtonPressTexture);
+			mClientButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 255));
+			if (keyboard->MouseLeftButtonDown())
+			{
+				mScene->CreateClient(ClientPrivelage::Client);
+				mScene->GetClient()->SetServerAddress(mIpAddress);
+
+				bClientState = true;
+			}
+		}
+		else
+		{
+			mClientButton.GetRenderer().sprite.setTexture(mClientButtonTexture);
+			mClientButton.GetRenderer().sprite.setColor(sf::Color(255, 255, 255, 125));
+		}
+
 	}
 
+	//Enter the server ip address to join.
+	GetInput(keyboard, deltaTime);
+	if (mValidAddress = ValidateIpAddress())
+	{
+		mIpAddress = mTextBuffer.toAnsiString();
+	}
 
 	if (bHostState)
 	{
@@ -141,6 +168,90 @@ void MenuState::OnDetach()
 {
 	//Clear all the entities that represent the main menu.
 	mScene->GetRegistery()->ClearRegistery();
+}
+
+const sf::Uint32 IP_ADDRESS_MAX_LENGTH = 15;
+
+void MenuState::GetInput(Keyboard* keyboard, const float deltaTime)
+{
+	//If backspace is pressed remove character from the end of the buffer.
+	if (keyboard->IsKeyPressed(sf::Keyboard::Key::BackSpace))
+	{
+		keyboard->SetKeyUp(sf::Keyboard::Key::BackSpace);
+
+		if (mTextBuffer.getSize() > 0)
+		{
+			mTextBuffer.erase(mTextBuffer.getSize() - 1, 1);
+		}
+	}
+
+	size_t size = mTextBuffer.getSize();
+	if (size  > IP_ADDRESS_MAX_LENGTH)
+	{
+		return;
+	}
+	
+		char recentCharacter = keyboard->GetRecentCharacter();
+		if (recentCharacter)
+		{
+			//If the last character matches the current, start a key delay timer.
+			if (recentCharacter == mLastCharacter)
+			{
+				if (mKeyInputDelay < 1.f)
+				{
+					mKeyInputDelay += (1.f * deltaTime);
+					return;
+				}
+			}
+			else
+			{
+				mKeyInputDelay = 0.f;
+			}
+			mTextBuffer.insert(mTextBuffer.getSize(), sf::String(recentCharacter));
+			mLastCharacter = recentCharacter;
+		}
+		else
+		{
+			mLastCharacter = 0;
+		}
+		mServerIpText.GetText().text.setString(mTextBuffer);
+		keyboard->SetCharacter(0);
+}
+
+bool MenuState::ValidateIpAddress()
+{
+	bool valid = true;
+	if (mTextBuffer.getSize() > IP_ADDRESS_MAX_LENGTH)
+	{
+		valid = false;
+	}
+	else if (mTextBuffer.getSize() < 11)
+	{
+		valid = false;
+	}
+	else
+	{
+		char dot = '.';
+		for (int i = 0; i < mTextBuffer.getSize(); ++i)
+		{
+			if (i == 3 || i == 7 || i == 9)
+			{
+				if (mTextBuffer[i] != dot)
+				{
+					valid = false;
+				}
+			}
+			else
+			{
+				if ((int)mTextBuffer[i] > -1 && (int)mTextBuffer[i] < 10)
+				{
+					valid = false;
+				}
+			}
+		}
+
+	}
+	return valid;
 }
 
 void MenuState::InitBackdrop()

@@ -67,6 +67,11 @@ void Application::ProcessEvents(sf::RenderWindow& window, Keyboard& keyboard, Sc
 		case sf::Event::TextEntered:
 			if (event.text.unicode > 31 && event.text.unicode < 127)
 			{
+				if (event.text.unicode == -1)
+				{
+					//Windows/Caps keys.
+					continue;
+				}
 				keyboard.SetCharacter((char)event.text.unicode);
 			}
 			break;

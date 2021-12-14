@@ -224,6 +224,7 @@ void Scene::HostNetworking(const float deltaTime, const float appElapsedTime)
 				mRegistery.GetTransformComponent("sharkGhost").rotation = recentPacket.rotations[0];
 				mRegistery.GetTransformComponent("sharkGhost").scale.x = recentPacket.scaleX[0];
 				mRegistery.GetTransformComponent("sharkGhost").scale.y = recentPacket.scaleY[0];
+				mRegistery.UpdateSpriteComponent("sharkGhost");
 			}
 			
 			predictedPosition =
@@ -389,7 +390,6 @@ void Scene::ClientNetworking(const float deltaTime, const float appElapsedTime)
 		}
 	}
 
-
 	//If the other connection has quit remove their assets.
 	if (mClient->GetHasClientQuit())
 	{
@@ -487,5 +487,16 @@ void Scene::InitNetworkStatsText()
 	shape->setFillColor(sf::Color(0, 0, 0, 125));
 	shape->setPosition(128.0f, 128.0f);
 	shape->setSize({ 256.0f, 48.0f });
+
+	shape = &mRegistery.GetRendererComponent("Ghosts").graphics;
+	shape->setFillColor(sf::Color(0, 0, 0, 125));
+	shape->setPosition(128.0f, 128.0f);
+	shape->setSize({ 0.f, 0.f });
+
+	shape = &mRegistery.GetRendererComponent("TickRate").graphics;
+	shape->setFillColor(sf::Color(0, 0, 0, 125));
+	shape->setPosition(128.0f, 128.0f);
+	shape->setSize({ 0.f, 0.f });
+
 	mInitLatencyGraphic = true;
 }

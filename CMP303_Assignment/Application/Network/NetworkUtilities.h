@@ -8,7 +8,6 @@ enum class ClientPrivelage
 	Client
 };
 
-
 // @brief Base packet for all data sent/recieved from the server.
 struct BaseData
 {
@@ -39,6 +38,7 @@ struct GameData : public BaseData
 		if (scaleY)    delete scaleY;
 		if (objectIDs) delete objectIDs;
 	}
+
 	sf::Uint8 quit = 0;
 	sf::Uint16 peerUdpRecvPort;
 	sf::Uint32 peerIpAddress;

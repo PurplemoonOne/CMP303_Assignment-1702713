@@ -35,13 +35,15 @@ public:
 
 	std::vector<GameData>& GetGameData() { return mGameData; }
 	const sf::Vector2f GetPredictedPosition() const { return mPredictedPositions.back(); }
+
+	void SetServerAddress(const std::string& ipAddress) { mServerIpAddress = ipAddress; }
 	
 public:
 	/**		Getters	& Setters	**/
 	const sf::UdpSocket& GetUDPSendSocket() const { return mUDPSendSocket; }
 	const sf::UdpSocket& GetUDPRecvSocket() const { return mUDPRecvSocket; }
 	const sf::TcpSocket& GetTCPSocket() const { return mTCPSocket; }
-	const sf::IpAddress& GetIPAdress() const { return mIPAdress; }
+	const sf::IpAddress& GetIPAdress() const { return mLocalIpAddress; }
 	void SetClientPrivelage(ClientPrivelage privelage) { mPrivelage = privelage; }
 
 	// @brief Grabs the most up to date latency peformance.
@@ -60,7 +62,8 @@ private:
 	void BindUDPSockets();
 
 	// @brief The client's machine IP
-	sf::IpAddress mIPAdress, mServerIpAddress;
+	sf::IpAddress mLocalIpAddress;
+	sf::IpAddress mServerIpAddress;
 
 	// @brief This client's socket for send and recieving data.
 	sf::UdpSocket mUDPSendSocket;

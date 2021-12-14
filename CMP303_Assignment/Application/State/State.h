@@ -4,6 +4,8 @@ class Gamepad;
 class Keyboard;
 class Scene;
 
+#include <string>
+
 class State
 {
 public:
@@ -32,9 +34,13 @@ public:
 	const bool HasGameAssets() { return mHasGameAssets; }
 	bool IsGhostsEnabled() const { return mEnableGhosts; }
 
+	void SetIpAddress(const std::string& string) { mIpAddress = string; }
+	const std::string& GetIpAddress() const { return mIpAddress; }
+
 protected:
 	Scene* mScene;
 	bool mUpdate = true;
 	bool mHasGameAssets = false;
 	bool mEnableGhosts = false;
+	std::string mIpAddress = " ";
 };

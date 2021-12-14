@@ -13,6 +13,16 @@ public:
 	virtual void OnDetach() override;
 
 private:
+
+	void GetInput(Keyboard* keyboard, const float deltaTime);
+	bool ValidateIpAddress();
+	bool mValidAddress = false;
+	float mKeyInputDelay = 0.f;
+	sf::String mTextBuffer;
+	sf::Font mFont;
+	Entity mServerIpText;
+	char mLastCharacter;
+
 	void InitBackdrop();
 	//Background
 	Entity mBackdrop;
@@ -21,9 +31,9 @@ private:
 	sf::Texture mMiddropTexture;
 
 	Entity mHostButton;
+	Entity mClientButton;
 	sf::Texture mClientButtonTexture;
 	sf::Texture mClientButtonPressTexture;
-	Entity mClientButton;
 	sf::Texture mHostButtonTexture;
 	sf::Texture mHostButtonPressTexture;
 	sf::Vector2f mScreenDimensions;

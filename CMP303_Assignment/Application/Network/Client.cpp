@@ -1,8 +1,6 @@
 #include "Client.h"
 #include <chrono>
 //Const data
-const sf::IpAddress SERVER_PUBLIC_IP = sf::IpAddress::getPublicAddress();
-const sf::IpAddress MACHINE_LOCAL_IP = sf::IpAddress::getLocalAddress();
 const sf::Uint16 SERVER_PORT = 5555;
 
 using namespace std::chrono;
@@ -106,7 +104,7 @@ Client::Client(sf::Vector2f windowMaxBoundaries)
 	mPeerQuit(false)
 {
 	// Fetch the machines IP Address. 
-	mIPAdress = sf::IpAddress::getLocalAddress();
+	mLocalIpAddress = sf::IpAddress::getLocalAddress();
 	BindUDPSockets();
 }
 
@@ -159,18 +157,29 @@ void Client::BindUDPSockets()
 void Client::ConnectToServer()
 {
 	//Establish connection with the server.
-	if (mTCPSocket.connect(sf::IpAddress::getLocalAddress(), SERVER_PORT) != sf::TcpSocket::Done)
+	if (mTCPSocket.connect(mServerIpAddress, SERVER_PORT) != sf::TcpSocket::Done)
 	{
-		APP_ERROR("Connection failed!");
+		APP_ERROR("Connection failed... defaulting to '127.0.0.1'.");
+		if (mTCPSocket.connect("127.0.0.1", SERVER_PORT) != sf::TcpSocket::Done)
+		{
+			APP_ERROR("Critical failure... could not establish a connection with the server.");
+		}
+		else
+		{
+			APP_INFO("Connected to server on port {0} network {1}.", SERVER_PORT, mLocalIpAddress);
+		}
 	}
 	else
 	{
-		APP_TRACE("Connected to server.");
+		APP_INFO("Connected to server.");
 
 		//Add the reciece UDP socket to the select.
 		mSelect.add(mUDPRecvSocket);
 		mSelect.add(mTCPSocket);
 		mUDPSendSocket.setBlocking(false);
+
+		//Get this machines address.
+		mLocalIpAddress = sf::IpAddress::getLocalAddress();
 	}
 }
 
@@ -264,7 +273,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.y;
 		data.peerUdpRecvPort = mUDPRecvPort;
-		data.ipAddress = sf::IpAddress::getLocalAddress().toInteger();
+		data.ipAddress = mLocalIpAddress.toInteger();
 
 		if (!(packet << data))
 		{
@@ -290,7 +299,7 @@ void Client::SendConnectionInformation(AssetType assetType, AssetCount assetCoun
 		data.sizeX = assetSize.x;
 		data.sizeY = assetSize.x;
 		data.peerUdpRecvPort = mUDPRecvPort;
-		data.ipAddress = sf::IpAddress::getLocalAddress().toInteger();
+		data.ipAddress = mLocalIpAddress.toInteger();
 
 		if (!(packet << data))
 		{

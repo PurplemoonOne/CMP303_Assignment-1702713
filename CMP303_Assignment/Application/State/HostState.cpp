@@ -283,9 +283,10 @@ inline void HostState::Seperation(const float deltaTime)
 	}
 	centroid *= 0.2f;
 
-
+	//For each boid...
 	for (int i= 0; i < mBoidCount; ++i)
 	{
+		//For each neighbouring boid...
 		for (int j = 0; j < mBoidCount; ++j)
 		{
 			sf::Vector2f distance{};
